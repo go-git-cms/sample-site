@@ -1,0 +1,26 @@
+---
+import { getEntry } from "astro:content";
+import Base from "~/layouts/Base.astro";
+import BlockRenderer from "~/components/BlockRenderer.astro";
+import { resolveSeo, SITE } from "~/lib/seo";
+
+// A singleton in the CMS is one entry here. It always exists — the model has no
+// wildcard in its path, so it cannot be created or deleted, only edited.
+const home = await getEntry("home", "home");
+if (!home) {
+  throw new Error("src/content/pages/home.yml is missing — the homepage is a singleton and must exist.");
+}
+
+// No fallback title on purpose: with none, resolveSeo returns SITE.title as-is
+// rather than suffixing it, so the homepage is "Ada Lovelace — engineer &
+// writer" and not "… · Ada Lovelace".
+const seo = resolveSeo(home.data.seo, { description: SITE.description });
+
+// The footer is one of the homepage's blocks, so the layout's default footer is
+// suppressed here to avoid rendering two.
+const hasFooterBlock = home.data.blocks.some((b) => b._variant === "footer");
+---
+
+<Base seo={seo} footer={!hasFooterBlock}>
+  <BlockRenderer blocks={home.data.blocks} />
+</Base>

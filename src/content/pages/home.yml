@@ -1,0 +1,37 @@
+blocks:
+  - _variant: hero
+    eyebrow: Engineer & writer
+    heading: I build systems that stay understandable.
+    primaryHref: /articles/
+    primaryLabel: Read the writing
+    secondaryHref: /projects/
+    secondaryLabel: See the work
+    subheading: Fifteen years of making software that other people have to maintain. Currently working on developer tooling; previously distributed systems and a long detour through compilers.
+  - _variant: featuredProjects
+    heading: Selected work
+    intro: Three things worth showing, out of rather more that aren't.
+    limit: 3
+  - _variant: featuredArticles
+    heading: Recent writing
+    intro: Mostly about the parts of engineering that don't fit in a diagram.
+    limit: 3
+  - _variant: cta
+    body: I take on a small number of advisory engagements each year.
+    buttonHref: mailto:hello@example.com
+    buttonLabel: Get in touch
+    heading: Looking for someone to think through a hard system?
+  - _variant: footer
+    links:
+      - href: mailto:hello@example.com
+        label: Email
+      - href: https://github.com
+        label: GitHub
+      - href: /rss.xml
+        label: RSS
+    tagline: Engineer and writer. Occasionally available for advisory work.
+seo:
+  description: Ada Lovelace builds developer tooling and writes about the parts of engineering that don't fit in a diagram.
+  keywords:
+    - software engineering
+    - developer tooling
+    - systems design

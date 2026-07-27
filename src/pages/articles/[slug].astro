@@ -1,0 +1,87 @@
+---
+import type { GetStaticPaths } from "astro";
+import { getCollection, render, type CollectionEntry } from "astro:content";
+import Base from "~/layouts/Base.astro";
+import { formatDate, mediaUrl, resolveSeo } from "~/lib/seo";
+
+// getStaticPaths runs in its own scope and Astro cannot infer the props it
+// passes back, so they are declared. Worth doing rather than reaching for
+// `any`: this is what makes a typo in `article.data.*` a build error instead of
+// an empty element on the page.
+type Props = { article: CollectionEntry<"articles"> };
+
+// Routed on the `slug` *field*, not the filename. The slug is what an editor
+// controls and what the CMS's preview URL template interpolates, so the two
+// have to agree — route on the filename and every preview lands on a 404 the
+// moment someone renames a post's title without renaming its file.
+export const getStaticPaths: GetStaticPaths = async () => {
+  const articles = await getCollection("articles", ({ data }) => !data.draft);
+  return articles.map((article) => ({
+    params: { slug: article.data.slug },
+    props: { article },
+  }));
+};
+
+const { article } = Astro.props as Props;
+const { Content } = await render(article);
+
+const published = formatDate(article.data.publishDate);
+const updated = formatDate(article.data.updateDate);
+const coverSrc = mediaUrl(article.data.cover);
+
+const seo = resolveSeo(article.data.seo, {
+  title: article.data.title,
+  description: article.data.excerpt,
+  image: article.data.cover,
+});
+---
+
+<Base
+  seo={seo}
+  type="article"
+  publishedTime={published.iso}
+  modifiedTime={updated.iso || undefined}
+>
+  <article class="mx-auto max-w-3xl px-6 py-16">
+    <header>
+      <a href="/articles/" class="font-mono text-xs hover:opacity-70" style="color: var(--fg-faint)">
+        ← Articles
+      </a>
+      <h1 class="mt-6 text-4xl font-semibold tracking-tight text-balance">
+        {article.data.title}
+      </h1>
+      <div class="mt-4 flex flex-wrap items-center gap-x-3 font-mono text-xs" style="color: var(--fg-faint)">
+        {published.iso && <time datetime={published.iso}>{published.label}</time>}
+        {updated.iso && <span>· updated {updated.label}</span>}
+      </div>
+      {
+        article.data.tags && article.data.tags.length > 0 && (
+          <ul class="mt-4 flex flex-wrap gap-2">
+            {article.data.tags.map((t) => (
+              <li
+                class="font-mono text-[11px] px-2 py-0.5 rounded border"
+                style="border-color: var(--line-subtle); color: var(--fg-faint)"
+              >
+                {t}
+              </li>
+            ))}
+          </ul>
+        )
+      }
+      {
+        coverSrc && (
+          <img
+            src={coverSrc}
+            alt=""
+            class="mt-10 w-full aspect-[16/9] object-cover rounded-md border"
+            style="border-color: var(--line-subtle)"
+          />
+        )
+      }
+    </header>
+
+    <div class="prose mt-10">
+      <Content />
+    </div>
+  </article>
+</Base>

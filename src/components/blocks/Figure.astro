@@ -1,0 +1,30 @@
+---
+import { mediaUrl, type MediaRef } from "~/lib/seo";
+
+interface Props {
+  image?: MediaRef;
+  caption?: string;
+}
+
+const { image, caption } = Astro.props;
+const src = mediaUrl(image);
+---
+
+{
+  src && (
+    <figure class="mx-auto max-w-4xl px-6 py-10">
+      <img
+        src={src}
+        alt={caption ?? ""}
+        loading="lazy"
+        class="w-full rounded-md border"
+        style="border-color: var(--line-subtle)"
+      />
+      {caption && (
+        <figcaption class="mt-3 text-sm text-center" style="color: var(--fg-faint)">
+          {caption}
+        </figcaption>
+      )}
+    </figure>
+  )
+}

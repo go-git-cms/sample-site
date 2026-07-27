@@ -1,0 +1,138 @@
+---
+import type { GetStaticPaths } from "astro";
+import { getCollection, render, type CollectionEntry } from "astro:content";
+import Base from "~/layouts/Base.astro";
+import BlockRenderer from "~/components/BlockRenderer.astro";
+import { mediaUrl, resolveSeo } from "~/lib/seo";
+
+// See the note in articles/[slug].astro — getStaticPaths props are not inferred.
+type Props = { project: CollectionEntry<"projects"> };
+
+export const getStaticPaths: GetStaticPaths = async () => {
+  const projects = await getCollection("projects");
+  return projects.map((project) => ({
+    params: { slug: project.data.slug },
+    props: { project },
+  }));
+};
+
+const { project } = Astro.props as Props;
+
+// A project page is composed of blocks *and* has a Markdown body for closing
+// notes. Both are optional, so the page renders whichever exist.
+const { Content } = await render(project);
+
+const STATUS: Record<string, string> = {
+  "in-progress": "In progress",
+  shipped: "Shipped",
+  archived: "Archived",
+};
+
+const thumbSrc = mediaUrl(project.data.thumbnail);
+
+const seo = resolveSeo(project.data.seo, {
+  title: project.data.title,
+  description: project.data.summary,
+  image: project.data.thumbnail,
+});
+---
+
+<Base seo={seo} type="article">
+  <article>
+    <header class="mx-auto max-w-3xl px-6 pt-16">
+      <a href="/projects/" class="font-mono text-xs hover:opacity-70" style="color: var(--fg-faint)">
+        ← Projects
+      </a>
+      <h1 class="mt-6 text-4xl font-semibold tracking-tight text-balance">
+        {project.data.title}
+      </h1>
+      {
+        project.data.summary && (
+          <p class="mt-4 text-lg text-pretty" style="color: var(--fg-muted)">
+            {project.data.summary}
+          </p>
+        )
+      }
+
+      {/* The structured metadata, as a definition list — it is data about the
+          project, not decoration, so it gets markup that says so. */}
+      <dl class="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-6 py-6 border-y" style="border-color: var(--line-subtle)">
+        {
+          project.data.year && (
+            <div>
+              <dt class="font-mono text-[11px] uppercase tracking-widest" style="color: var(--fg-faint)">Year</dt>
+              <dd class="mt-1 text-sm">{project.data.year}</dd>
+            </div>
+          )
+        }
+        {
+          project.data.role && (
+            <div>
+              <dt class="font-mono text-[11px] uppercase tracking-widest" style="color: var(--fg-faint)">Role</dt>
+              <dd class="mt-1 text-sm">{project.data.role}</dd>
+            </div>
+          )
+        }
+        {
+          project.data.status && (
+            <div>
+              <dt class="font-mono text-[11px] uppercase tracking-widest" style="color: var(--fg-faint)">Status</dt>
+              <dd class="mt-1 text-sm">{STATUS[project.data.status]}</dd>
+            </div>
+          )
+        }
+        {
+          project.data.url && (
+            <div>
+              <dt class="font-mono text-[11px] uppercase tracking-widest" style="color: var(--fg-faint)">Live</dt>
+              <dd class="mt-1 text-sm">
+                <a
+                  href={project.data.url}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                  class="underline underline-offset-4"
+                >
+                  Visit ↗
+                </a>
+              </dd>
+            </div>
+          )
+        }
+      </dl>
+
+      {
+        project.data.tags && project.data.tags.length > 0 && (
+          <ul class="mt-6 flex flex-wrap gap-2">
+            {project.data.tags.map((t) => (
+              <li
+                class="font-mono text-[11px] px-2 py-0.5 rounded border"
+                style="border-color: var(--line-subtle); color: var(--fg-faint)"
+              >
+                {t}
+              </li>
+            ))}
+          </ul>
+        )
+      }
+
+      {
+        thumbSrc && (
+          <img
+            src={thumbSrc}
+            alt=""
+            class="mt-10 w-full aspect-[16/10] object-cover rounded-md border"
+            style="border-color: var(--line-subtle)"
+          />
+        )
+      }
+    </header>
+
+    <BlockRenderer blocks={project.data.blocks} />
+
+    <div class="mx-auto max-w-3xl px-6 pb-16">
+      <div class="prose">
+        <Content />
+      </div>
+    </div>
+  </article>
+</Base>

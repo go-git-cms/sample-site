@@ -1,0 +1,24 @@
+---
+interface Props {
+  items?: { label: string; value: string }[];
+}
+
+const { items = [] } = Astro.props;
+---
+
+{
+  items.length > 0 && (
+    <section class="mx-auto max-w-4xl px-6 py-10">
+      <dl class="grid gap-px rounded-md overflow-hidden border sm:grid-cols-3" style="border-color: var(--line); background: var(--line)">
+        {items.map((m) => (
+          <div class="px-6 py-8 text-center" style="background: var(--page)">
+            <dt class="font-mono text-xs uppercase tracking-widest" style="color: var(--fg-faint)">
+              {m.label}
+            </dt>
+            <dd class="mt-2 text-2xl font-semibold tracking-tight">{m.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  )
+}

@@ -1,0 +1,14 @@
+---
+// The homepage's footer, composed as a block so its links are editable content
+// rather than a template edit. Every other page gets the default SiteFooter.
+import SiteFooter from "~/components/SiteFooter.astro";
+
+interface Props {
+  tagline?: string;
+  links?: { label: string; href: string }[];
+}
+
+const { tagline, links } = Astro.props;
+---
+
+<SiteFooter tagline={tagline} links={links} />

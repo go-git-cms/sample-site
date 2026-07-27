@@ -1,0 +1,26 @@
+{
+  "name": "@go-git-cms/example-sample-site",
+  "private": true,
+  "type": "module",
+  "description": "A personal profile starter — Astro + Tailwind, block-composed pages, modelled end to end in go-git-cms.yml.",
+  "scripts": {
+    "dev": "astro dev --port 4340",
+    "build": "astro build",
+    "preview": "astro preview --port 4340",
+    "check": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/rss": "^4.0.11",
+    "@astrojs/sitemap": "^3.6.0",
+    "astro": "^5.14.1",
+    "marked": "^15.0.7"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.9",
+    "@go-git-cms/preview-sidecar": "workspace:*",
+    "@tailwindcss/vite": "^4.1.11",
+    "tailwindcss": "^4.1.11",
+    "typescript": "^5.6.0",
+    "vite": "^6.4.1"
+  }
+}

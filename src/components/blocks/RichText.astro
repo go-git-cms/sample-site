@@ -1,0 +1,22 @@
+---
+// A block whose value is Markdown held in *frontmatter* rather than the file
+// body — `display: { component: body, source: field }` in go-git-cms.yml. The
+// editor is the same rich text control; only where the string lives differs.
+//
+// Astro renders the file body for us, but a frontmatter string is just a
+// string, so this block renders it itself.
+import { marked } from "marked";
+
+interface Props {
+  heading?: string;
+  body?: string;
+}
+
+const { heading, body } = Astro.props;
+const html = body ? await marked.parse(body, { async: true }) : "";
+---
+
+<section class="mx-auto max-w-3xl px-6 py-10">
+  {heading && <h2 class="text-2xl font-semibold tracking-tight mb-5">{heading}</h2>}
+  {html && <div class="prose" set:html={html} />}
+</section>

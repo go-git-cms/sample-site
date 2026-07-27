@@ -1,0 +1,413 @@
+# Sample Site — a personal profile template's content model.
+#
+# ── Why the anchors ─────────────────────────────────────────────────────────
+#
+# Four content models on this site carry SEO metadata, and every one of them
+# wants the same six fields. Writing them out four times is how they drift: the
+# fifth model gets `ogImage` instead of `image`, and the site's <head> quietly
+# renders nothing for it.
+#
+# So the SEO block is declared once as a YAML anchor (`&seo`) and aliased into
+# every model that needs it (`*seo`). The CMS never sees the anchor — YAML
+# resolves aliases while parsing, so what reaches the importer is four
+# identical, fully-expanded field lists. That is the point: the repetition
+# still exists in the data, it just no longer exists in the file you maintain.
+#
+# ── Where anchors have to live ──────────────────────────────────────────────
+#
+# Anchors are usually parked in a top-level `x-definitions:` block. That does
+# not work here: this config's schema is closed (`additionalProperties: false`),
+# so an undeclared top-level key is rejected before anything else is checked.
+#
+# The alternative is what this file does — declare each anchor at its *first
+# real use* and alias it afterwards. Slightly less tidy to read, but it needs
+# no support from the config format and nothing to keep in sync.
+#
+# ── Two forms, and when to use which ────────────────────────────────────────
+#
+#   *name        a plain alias — an exact copy. Right when every use is
+#                identical, which is the case for `seo`.
+#
+#   <<: *name    a merge key — copy, then override some keys. Right when the
+#                shape repeats but the name or label must differ, which is the
+#                case for media references and the shared CTA block.
+#
+# Component ↔ type rules (enforced on import): string → input | textarea | body |
+# slug | email | url | date | datetime | select | media; boolean → checkbox |
+# switch; integer/float → number | stepper | telephone | date | datetime |
+# select; array → list | mixedList; object → inlineGroup | group | media.
+
+version: 1
+
+# ── Media ───────────────────────────────────────────────────────────────────
+# Astro serves everything under public/ from the site root, so
+# public/images/a.png is fetched as /images/a.png. `public_base` records that
+# transformation, which is what lets a media field store the URL the site uses
+# while the CMS still knows which repository file it refers to.
+media:
+  - name: images
+    path: "public/images/**/*.{png,jpg,jpeg,webp,avif,svg}"
+    mime_types: ["image/*"]
+    public_base: /images
+
+content_models:
+  # ── Articles ──────────────────────────────────────────────────────────────
+  - name: articles
+    label: "{{title}}"
+    path: "src/content/articles/*.md"
+    filename: "{{slug}}"
+    fields:
+      - name: title
+        label: Title
+        type: string
+        required: true
+
+      - name: slug
+        label: Slug
+        type: string
+        required: true
+        display: { component: slug }
+
+      - name: publishDate
+        label: Published
+        type: string
+        required: true
+        display: { component: date }
+
+      - name: updateDate
+        label: Updated
+        type: string
+        display: { component: date }
+
+      - name: draft
+        label: Draft
+        type: boolean
+        display: { component: switch }
+
+      - name: featured
+        label: Feature on the homepage
+        type: boolean
+        display: { component: switch }
+
+      - name: excerpt
+        label: Excerpt
+        type: string
+        display: { component: textarea }
+
+      - name: tags
+        label: Tags
+        type: array
+        of: string
+        display: { component: list }
+
+      # FIRST USE of the media-reference shape. The object form stores
+      # {id, public_path, cdn_path}: the id is authoritative, so the reference
+      # survives the file being renamed, and the paths are copies the built site
+      # reads without calling the CMS. Those three children are fixed and
+      # required — exactly the kind of boilerplate worth anchoring.
+      - &mediaRef
+        name: cover
+        label: Cover image
+        type: object
+        display: { component: media, media: images }
+        fields:
+          - { name: id, type: string }
+          - { name: public_path, type: string }
+          - { name: cdn_path, type: string }
+
+      # FIRST USE of the SEO block. Everything below aliases this.
+      - &seo
+        name: seo
+        label: SEO
+        type: object
+        display: { component: group }
+        fields:
+          - name: title
+            label: Meta title
+            type: string
+            display: { component: input }
+          - name: description
+            label: Meta description
+            type: string
+            display: { component: textarea }
+          - name: canonical
+            label: Canonical URL
+            type: string
+            display: { component: url }
+          - name: noindex
+            label: Hide from search engines
+            type: boolean
+            display: { component: switch }
+          # A media reference again, under a different name — merge key.
+          - <<: *mediaRef
+            name: image
+            label: Social share image
+          - name: keywords
+            label: Keywords
+            type: array
+            of: string
+            display: { component: list }
+
+      - name: body
+        label: Body
+        type: string
+        display: { component: body, source: body, format: markdown, flavor: gfm }
+
+  # ── Projects ──────────────────────────────────────────────────────────────
+  # Block-based like the homepage, but with structured metadata on top: the
+  # list page filters and groups on these, so they are real fields rather than
+  # something buried in a block.
+  - name: projects
+    label: "{{title}}"
+    path: "src/content/projects/*.md"
+    filename: "{{slug}}"
+    fields:
+      - name: title
+        label: Title
+        type: string
+        required: true
+
+      - name: slug
+        label: Slug
+        type: string
+        required: true
+        display: { component: slug }
+
+      - name: summary
+        label: Summary
+        type: string
+        display: { component: textarea }
+
+      - name: year
+        label: Year
+        type: integer
+        min: 1990
+        max: 2100
+        display: { component: number }
+
+      - name: role
+        label: Role
+        type: string
+
+      - name: status
+        label: Status
+        type: string
+        enum: ["in-progress", "shipped", "archived"]
+        display: { component: select }
+
+      - name: url
+        label: Live URL
+        type: string
+        display: { component: url }
+
+      - name: tags
+        label: Tags
+        type: array
+        of: string
+        display: { component: list }
+
+      - name: featured
+        label: Feature on the homepage
+        type: boolean
+        display: { component: switch }
+
+      - <<: *mediaRef
+        name: thumbnail
+        label: Thumbnail
+
+      # The project page is composed rather than written straight through.
+      - name: blocks
+        label: Page blocks
+        type: array
+        display: { component: mixedList }
+        variants:
+          - name: richText
+            label: Rich text
+            fields:
+              - name: heading
+                label: Heading
+                type: string
+              - name: body
+                label: Body
+                type: string
+                display: { component: body, source: field, format: markdown, flavor: gfm }
+
+          - name: figure
+            label: Figure
+            fields:
+              - <<: *mediaRef
+                name: image
+                label: Image
+              - name: caption
+                label: Caption
+                type: string
+
+          - name: metrics
+            label: Metrics
+            fields:
+              - name: items
+                label: Metrics
+                type: array
+                display: { component: list }
+                of: object
+                fields:
+                  - name: label
+                    type: string
+                  - name: value
+                    type: string
+
+          # FIRST USE of the CTA block. The homepage aliases it below, so the
+          # two surfaces cannot drift into two slightly different CTAs.
+          - &ctaBlock
+            name: cta
+            label: Call to action
+            fields:
+              - name: heading
+                label: Heading
+                type: string
+                required: true
+              - name: body
+                label: Body
+                type: string
+                display: { component: textarea }
+              - name: buttonLabel
+                label: Button label
+                type: string
+              - name: buttonHref
+                label: Button link
+                type: string
+                display: { component: url }
+
+      - *seo
+
+      - name: body
+        label: Notes
+        type: string
+        display: { component: body, source: body, format: markdown, flavor: gfm }
+
+  # ── Homepage ──────────────────────────────────────────────────────────────
+  # A singleton: the path has no wildcard, so the CMS offers get and update and
+  # nothing else. There is one homepage; it cannot be created or deleted.
+  - name: home
+    label: Homepage
+    path: "src/content/pages/home.yml"
+    fields:
+      - name: blocks
+        label: Page blocks
+        type: array
+        min_items: 1
+        display: { component: mixedList }
+        variants:
+          - name: hero
+            label: Hero
+            fields:
+              - name: eyebrow
+                label: Eyebrow
+                type: string
+              - name: heading
+                label: Heading
+                type: string
+                required: true
+              - name: subheading
+                label: Subheading
+                type: string
+                display: { component: textarea }
+              - <<: *mediaRef
+                name: portrait
+                label: Portrait
+              - name: primaryLabel
+                label: Primary button label
+                type: string
+              - name: primaryHref
+                label: Primary button link
+                type: string
+              - name: secondaryLabel
+                label: Secondary button label
+                type: string
+              - name: secondaryHref
+                label: Secondary button link
+                type: string
+
+          - name: featuredArticles
+            label: Featured articles
+            fields:
+              - name: heading
+                label: Heading
+                type: string
+              - name: intro
+                label: Intro
+                type: string
+                display: { component: textarea }
+              - name: limit
+                label: How many to show
+                type: integer
+                min: 1
+                max: 12
+                display: { component: stepper }
+
+          - name: featuredProjects
+            label: Featured projects
+            fields:
+              - name: heading
+                label: Heading
+                type: string
+              - name: intro
+                label: Intro
+                type: string
+                display: { component: textarea }
+              - name: limit
+                label: How many to show
+                type: integer
+                min: 1
+                max: 12
+                display: { component: stepper }
+
+          # The same CTA the project pages use.
+          - *ctaBlock
+
+          - name: footer
+            label: Footer
+            fields:
+              - name: tagline
+                label: Tagline
+                type: string
+              - name: links
+                label: Links
+                type: array
+                display: { component: list }
+                of: object
+                fields:
+                  - name: label
+                    type: string
+                  - name: href
+                    type: string
+
+      - *seo
+
+  # ── About ─────────────────────────────────────────────────────────────────
+  # The one page that is prose rather than blocks, because an about page is an
+  # essay and forcing it through a block builder helps nobody.
+  - name: about
+    label: About
+    path: "src/content/pages/about.md"
+    fields:
+      - name: title
+        label: Title
+        type: string
+        required: true
+
+      - name: intro
+        label: Intro
+        type: string
+        display: { component: textarea }
+
+      - <<: *mediaRef
+        name: portrait
+        label: Portrait
+
+      - name: body
+        label: Body
+        type: string
+        display: { component: body, source: body, format: markdown, flavor: gfm }
+
+      - *seo

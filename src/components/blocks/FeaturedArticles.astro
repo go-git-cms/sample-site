@@ -1,0 +1,57 @@
+---
+import { getCollection } from "astro:content";
+import ArticleCard from "~/components/ArticleCard.astro";
+
+interface Props {
+  heading?: string;
+  intro?: string;
+  limit?: number;
+}
+
+const { heading = "Writing", intro, limit = 3 } = Astro.props;
+
+// The block says how many to show; which ones is the content's decision, taken
+// from `featured` and then recency. An editor who wants a specific post on the
+// homepage flags the post, rather than maintaining a second list here that can
+// go stale when the post is renamed.
+const all = await getCollection("articles", ({ data }) => !data.draft);
+const featured = all
+  .sort((a, b) => {
+    const byFlag = Number(b.data.featured ?? false) - Number(a.data.featured ?? false);
+    if (byFlag !== 0) return byFlag;
+    return b.data.publishDate.getTime() - a.data.publishDate.getTime();
+  })
+  .slice(0, limit);
+---
+
+{
+  featured.length > 0 && (
+    <section class="mx-auto max-w-5xl px-6 py-16 border-t" style="border-color: var(--line-subtle)">
+      <div class="flex items-baseline justify-between gap-6">
+        <div>
+          <h2 class="text-2xl font-semibold tracking-tight">{heading}</h2>
+          {intro && (
+            <p class="mt-2 max-w-xl text-pretty" style="color: var(--fg-muted)">
+              {intro}
+            </p>
+          )}
+        </div>
+        <a href="/articles/" class="text-sm shrink-0 hover:opacity-70 transition-opacity">
+          All articles →
+        </a>
+      </div>
+      <div class="mt-8 grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
+        {featured.map((a) => (
+          <ArticleCard
+            title={a.data.title}
+            slug={a.data.slug}
+            excerpt={a.data.excerpt}
+            publishDate={a.data.publishDate}
+            tags={a.data.tags}
+            cover={a.data.cover}
+          />
+        ))}
+      </div>
+    </section>
+  )
+}

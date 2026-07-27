@@ -1,0 +1,39 @@
+---
+import { SITE } from "~/lib/seo";
+
+const nav = [
+  { label: "Articles", href: "/articles/" },
+  { label: "Projects", href: "/projects/" },
+  { label: "About", href: "/about/" },
+];
+
+// Trailing-slash-insensitive, so /articles and /articles/ both mark the tab.
+const here = Astro.url.pathname.replace(/\/+$/, "") || "/";
+const isActive = (href: string) => here.startsWith(href.replace(/\/+$/, "")) && href !== "/";
+---
+
+<header class="border-b" style="border-color: var(--line-subtle)">
+  <div class="mx-auto max-w-5xl px-6 h-14 flex items-center justify-between gap-6">
+    <a href="/" class="font-medium tracking-tight hover:opacity-70 transition-opacity">
+      {SITE.name}
+    </a>
+    <nav aria-label="Main">
+      <ul class="flex items-center gap-6 text-sm">
+        {
+          nav.map((item) => (
+            <li>
+              <a
+                href={item.href}
+                aria-current={isActive(item.href) ? "page" : undefined}
+                class="hover:opacity-70 transition-opacity"
+                style={isActive(item.href) ? "" : "color: var(--fg-muted)"}
+              >
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+  </div>
+</header>

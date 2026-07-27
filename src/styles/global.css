@@ -1,0 +1,162 @@
+@import "tailwindcss";
+
+/* On-brand for Go·Git CMS without importing the design system.
+ *
+ * The product's identity is not a colour — it is the *absence* of one. A single
+ * neutral ink ramp carries the whole UI, structure is drawn with hairlines
+ * rather than shadows, and every technical string (a path, a hash, a date, a
+ * tag) is set in mono. That reads as deliberate rather than unfinished, and it
+ * is trivially portable: what follows is the same ramp as
+ * packages/design-system/css/tokens.css, re-declared as Tailwind theme tokens
+ * so this starter has no dependency on the design system at all.
+ *
+ * Copying rather than importing is the right call here. A template people fork
+ * and repaint should not be coupled to the CMS's internal component library —
+ * and a starter that cannot be restyled is not a starter. */
+
+@theme {
+  --color-ink-0: #ffffff;
+  --color-ink-50: #f7f7f7;
+  --color-ink-100: #ededed;
+  --color-ink-150: #e4e4e4;
+  --color-ink-200: #dcdcdc;
+  --color-ink-300: #c9c9c9;
+  --color-ink-400: #a6a6a6;
+  --color-ink-500: #808080;
+  --color-ink-600: #5c5c5c;
+  --color-ink-700: #3d3d3d;
+  --color-ink-800: #242424;
+  --color-ink-900: #151515;
+  --color-ink-1000: #0a0a0a;
+
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --radius-md: 6px;
+}
+
+/* Semantic aliases, so a repaint is one block rather than a find-and-replace
+   across every template. Dark mode is the same mapping over an inverted ramp. */
+:root {
+  --page: var(--color-ink-0);
+  --sunken: var(--color-ink-50);
+  --raised: var(--color-ink-0);
+  --fg: var(--color-ink-1000);
+  --fg-muted: var(--color-ink-600);
+  --fg-faint: var(--color-ink-500);
+  --line: var(--color-ink-200);
+  --line-subtle: var(--color-ink-100);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-ink-0: #0b0b0b;
+    --color-ink-50: #151515;
+    --color-ink-100: #1e1e1e;
+    --color-ink-150: #242424;
+    --color-ink-200: #2d2d2d;
+    --color-ink-300: #3a3a3a;
+    --color-ink-400: #585858;
+    --color-ink-500: #808080;
+    --color-ink-600: #a2a2a2;
+    --color-ink-700: #c4c4c4;
+    --color-ink-800: #dcdcdc;
+    --color-ink-900: #ececec;
+    --color-ink-1000: #f4f4f4;
+
+    --raised: var(--color-ink-50);
+    color-scheme: dark;
+  }
+}
+
+html {
+  background: var(--page);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--fg);
+  color: var(--page);
+}
+
+/* Focus is never removed, only restyled — a keyboard user has to be able to see
+   where they are. */
+:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 2px;
+}
+
+/* Prose. Hand-rolled rather than @tailwindcss/typography: the ramp above is the
+   only palette, and the plugin's defaults would reintroduce colours we spent
+   this file removing. */
+.prose {
+  max-width: 68ch;
+  line-height: 1.7;
+  color: var(--fg);
+}
+.prose > * + * {
+  margin-top: 1.25em;
+}
+.prose h2 {
+  margin-top: 2em;
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.prose h3 {
+  margin-top: 1.75em;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.prose a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--color-ink-400);
+}
+.prose a:hover {
+  text-decoration-color: var(--fg);
+}
+.prose ul,
+.prose ol {
+  padding-left: 1.25em;
+}
+.prose ul {
+  list-style: disc;
+}
+.prose ol {
+  list-style: decimal;
+}
+.prose li + li {
+  margin-top: 0.35em;
+}
+.prose blockquote {
+  padding-left: 1em;
+  border-left: 2px solid var(--line);
+  color: var(--fg-muted);
+}
+.prose code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  padding: 0.15em 0.35em;
+  background: var(--sunken);
+  border-radius: 4px;
+}
+.prose pre {
+  padding: 1em;
+  overflow-x: auto;
+  background: var(--sunken);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-md);
+}
+.prose pre code {
+  padding: 0;
+  background: none;
+}
+.prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-md);
+}

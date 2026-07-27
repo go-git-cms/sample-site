@@ -1,0 +1,48 @@
+---
+/**
+ * Dispatches a mixed list onto components by its `_variant` discriminator.
+ *
+ * `_variant` is the CMS's own key: every item in a `mixedList` records which of
+ * the declared variant shapes it is, and that string matches the variant `name`
+ * in go-git-cms.yml. So the map below is the join between the content model and
+ * this site's components, and it is the only place that join exists.
+ *
+ * An unrecognised variant renders nothing rather than throwing. A block added
+ * to the schema before its component exists is a normal state during
+ * development — the page should keep building and simply not show it.
+ */
+import Hero from "~/components/blocks/Hero.astro";
+import FeaturedArticles from "~/components/blocks/FeaturedArticles.astro";
+import FeaturedProjects from "~/components/blocks/FeaturedProjects.astro";
+import Cta from "~/components/blocks/Cta.astro";
+import FooterBlock from "~/components/blocks/FooterBlock.astro";
+import RichText from "~/components/blocks/RichText.astro";
+import Figure from "~/components/blocks/Figure.astro";
+import Metrics from "~/components/blocks/Metrics.astro";
+
+const REGISTRY: Record<string, any> = {
+  hero: Hero,
+  featuredArticles: FeaturedArticles,
+  featuredProjects: FeaturedProjects,
+  cta: Cta,
+  footer: FooterBlock,
+  richText: RichText,
+  figure: Figure,
+  metrics: Metrics,
+};
+
+interface Props {
+  blocks?: ({ _variant: string } & Record<string, unknown>)[];
+}
+
+const { blocks = [] } = Astro.props;
+---
+
+{
+  blocks.map((block) => {
+    const Component = REGISTRY[block._variant];
+    if (!Component) return null;
+    const { _variant, ...props } = block;
+    return <Component {...props} />;
+  })
+}

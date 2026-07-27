@@ -1,0 +1,45 @@
+---
+import { getCollection } from "astro:content";
+import Base from "~/layouts/Base.astro";
+import ArticleCard from "~/components/ArticleCard.astro";
+import { resolveSeo } from "~/lib/seo";
+
+// Drafts are excluded from the build entirely. `draft: true` in the CMS is how
+// an editor keeps a post out of the published site while still saving it to the
+// branch — remember that saving already commits, so "unpublished" has to be a
+// content decision rather than an unsaved one.
+const articles = (await getCollection("articles", ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime()
+);
+
+const seo = resolveSeo(undefined, {
+  title: "Articles",
+  description: "Essays and notes.",
+});
+---
+
+<Base seo={seo}>
+  <div class="mx-auto max-w-5xl px-6 py-16">
+    <h1 class="text-3xl font-semibold tracking-tight">Articles</h1>
+    <p class="mt-2" style="color: var(--fg-muted)">Essays and notes, newest first.</p>
+
+    {
+      articles.length === 0 ? (
+        <p class="mt-12" style="color: var(--fg-faint)">Nothing published yet.</p>
+      ) : (
+        <div class="mt-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
+          {articles.map((a) => (
+            <ArticleCard
+              title={a.data.title}
+              slug={a.data.slug}
+              excerpt={a.data.excerpt}
+              publishDate={a.data.publishDate}
+              tags={a.data.tags}
+              cover={a.data.cover}
+            />
+          ))}
+        </div>
+      )
+    }
+  </div>
+</Base>

@@ -1,0 +1,65 @@
+---
+import { getCollection } from "astro:content";
+import Base from "~/layouts/Base.astro";
+import ProjectCard from "~/components/ProjectCard.astro";
+import { resolveSeo } from "~/lib/seo";
+
+const projects = (await getCollection("projects")).sort(
+  (a, b) => (b.data.year ?? 0) - (a.data.year ?? 0)
+);
+
+// Tags are structured metadata rather than prose, which is what makes this
+// possible: the facet list is derived from the content, so adding a tag to a
+// project adds it to the filter without touching a template.
+const tags = [...new Set(projects.flatMap((p) => p.data.tags ?? []))].sort();
+
+const seo = resolveSeo(undefined, {
+  title: "Projects",
+  description: "Selected work, with what it was and what came of it.",
+});
+---
+
+<Base seo={seo}>
+  <div class="mx-auto max-w-5xl px-6 py-16">
+    <h1 class="text-3xl font-semibold tracking-tight">Projects</h1>
+    <p class="mt-2" style="color: var(--fg-muted)">
+      Selected work, newest first.
+    </p>
+
+    {
+      tags.length > 0 && (
+        <ul class="mt-6 flex flex-wrap gap-2" aria-label="Tags across all projects">
+          {tags.map((t) => (
+            <li
+              class="font-mono text-[11px] px-2 py-0.5 rounded border"
+              style="border-color: var(--line-subtle); color: var(--fg-faint)"
+            >
+              {t}
+            </li>
+          ))}
+        </ul>
+      )
+    }
+
+    {
+      projects.length === 0 ? (
+        <p class="mt-12" style="color: var(--fg-faint)">Nothing here yet.</p>
+      ) : (
+        <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {projects.map((p) => (
+            <ProjectCard
+              title={p.data.title}
+              slug={p.data.slug}
+              summary={p.data.summary}
+              year={p.data.year}
+              role={p.data.role}
+              status={p.data.status}
+              tags={p.data.tags}
+              thumbnail={p.data.thumbnail}
+            />
+          ))}
+        </div>
+      )
+    }
+  </div>
+</Base>
