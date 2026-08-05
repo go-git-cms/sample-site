@@ -1,7 +1,8 @@
 # Caddy is the whole runtime for the sample-site container. The site is
 # `output: "static"` (astro.config.mjs), so unlike the website and docs
 # containers there is no Node process behind this — the build stage's dist/ is
-# the entire site, copied to /srv, and Caddy serves it. That is the whole story.
+# the entire site, copied to /srv, and Caddy serves it. When the image was built
+# with GITCMS_API_URL, dist/ also carries the self-hosted editor at /admin/.
 #
 # The platform terminates TLS at its edge, so this listens on plain HTTP on
 # $PORT and does not ask for a certificate — `auto_https off` stops Caddy trying
@@ -25,23 +26,15 @@
 	root * /srv
 	encode zstd gzip
 
+	# Headers every response shares. The Content-Security-Policy is deliberately
+	# NOT here: the site and the editor need different policies, and a site-wide
+	# header would stack with a per-handle one — browsers enforce the
+	# intersection of multiple CSP headers, which would silently break /admin.
+	# Each handle below sets its own instead.
 	header {
 		X-Content-Type-Options nosniff
 		Referrer-Policy strict-origin-when-cross-origin
 		X-Frame-Options DENY
-		# Far stricter than the website/docs policies, because the build permits
-		# it: this site ships no JavaScript at all — the only <script> tags in
-		# dist/ are application/ld+json, which the browser treats as data — and
-		# no external fonts or third-party anything. script-src is therefore
-		# deliberately absent, falling back to default-src 'none'.
-		#
-		# The two allowances that remain are real. Templates set inline
-		# style="" attributes (accent colours, muted text), which style-src
-		# governs — hence 'unsafe-inline'. And media fields resolve to /images
-		# on this origin, hence img-src 'self'. A deployment that moves media to
-		# a CDN (the object form's cdn_path, which src/lib/seo.ts#mediaUrl
-		# prefers) must add that origin to img-src or every picture disappears.
-		Content-Security-Policy "default-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
 		-Server
 	}
 
@@ -54,9 +47,59 @@
 		respond "ok" 200
 	}
 
+	# The self-hosted editor: a SPA whose static files Astro copied out of
+	# public/admin into dist/. An image built without GITCMS_API_URL has no
+	# /admin directory, so the try_files fallback finds nothing and this whole
+	# block answers 404 — which is correct there.
+	@admin path /admin /admin/*
+	handle @admin {
+		# The editor's own policy, and the reason CSP is per-handle. Same shape
+		# as the docs/website policies minus their PostHog hosts: the bundle and
+		# its inline bootstrap need script-src 'self' 'unsafe-inline'; the font
+		# stylesheet in its index.html is Google's; GraphQL goes to the CMS API
+		# origin and live collaboration to its ws form, which must be listed
+		# separately because a CSP source matches on scheme. Both are derived by
+		# docker-entrypoint.sh from GITCMS_API_URL (or set explicitly as
+		# CMS_API_ORIGIN / CMS_COLLAB_ORIGIN). CMS_PREVIEW_SIDECAR appears twice
+		# because the preview pane uses the sidecar two ways: fetch/EventSource
+		# against /sessions/* is connect-src, and the preview itself is an
+		# iframe of a URL on that origin — frame-src, which otherwise inherits
+		# default-src and leaves the pane blank. A deployment that stores media
+		# off-origin needs that origin in img-src too, or thumbnails vanish.
+		header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' {$CMS_API_ORIGIN:} {$CMS_WS_ORIGINS:} {$CMS_PREVIEW_SIDECAR:}; frame-src 'self' {$CMS_PREVIEW_SIDECAR:}; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+
+		# gitcms-ide emits app.js/app.css under deliberately stable names, so
+		# the HTML references them as app.js?v=<content hash> (stamp-admin.mjs)
+		# and the shell itself must never be cached — a cached index.html keeps
+		# pointing at the previous build's ?v= and the editor silently stays on
+		# the old bundle's baked-in API URL and ids. The stamped URLs make the
+		# assets themselves immutable: new bytes, new URL.
+		@editorAssets path /admin/app.js /admin/app.css
+		header @editorAssets Cache-Control "public, max-age=31536000, immutable"
+		@editorShell not path /admin/app.js /admin/app.css
+		header @editorShell Cache-Control "no-store"
+
+		# The SPA's router writes real paths under /admin/, so anything that is
+		# not a file on disk is a client-side route and gets the shell.
+		try_files {path} {path}/ /admin/index.html
+		file_server
+	}
+
+	# Everything from here down is the site itself, which ships no JavaScript at
+	# all — the only <script> tags in dist/ are application/ld+json, which the
+	# browser treats as data — and no external fonts or third-party anything.
+	# script-src is therefore deliberately absent, falling back to default-src
+	# 'none'. The two allowances are real: templates set inline style=""
+	# attributes (accent colours, muted text), hence 'unsafe-inline' in
+	# style-src, and media fields resolve to /images on this origin, hence
+	# img-src 'self'. A deployment that moves media to a CDN (the object form's
+	# cdn_path, which src/lib/seo.ts#mediaUrl prefers) must add that origin to
+	# img-src or every picture disappears.
+
 	# Astro emits its bundles under /_astro with hashed filenames, so they are
 	# immutable by construction and never need revalidating.
 	handle /_astro/* {
+		header Content-Security-Policy "default-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
 		header Cache-Control "public, max-age=31536000, immutable"
 		file_server
 	}
@@ -75,6 +118,7 @@
 	#		file_server
 	#	}
 	handle {
+		header Content-Security-Policy "default-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
 		file_server
 	}
 }
