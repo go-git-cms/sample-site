@@ -1,0 +1,80 @@
+# Caddy is the whole runtime for the sample-site container. The site is
+# `output: "static"` (astro.config.mjs), so unlike the website and docs
+# containers there is no Node process behind this — the build stage's dist/ is
+# the entire site, copied to /srv, and Caddy serves it. That is the whole story.
+#
+# The platform terminates TLS at its edge, so this listens on plain HTTP on
+# $PORT and does not ask for a certificate — `auto_https off` stops Caddy trying
+# to solve an ACME challenge for a hostname it doesn't control. Running it
+# locally is the same shape, which is the point: one config, no
+# environment-conditional blocks.
+
+{
+	auto_https off
+	admin off
+	# The platform already logs the request; Caddy repeating it doubles the
+	# volume.
+	log {
+		output stderr
+		format console
+		level ERROR
+	}
+}
+
+:{$PORT:8080} {
+	root * /srv
+	encode zstd gzip
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Frame-Options DENY
+		# Far stricter than the website/docs policies, because the build permits
+		# it: this site ships no JavaScript at all — the only <script> tags in
+		# dist/ are application/ld+json, which the browser treats as data — and
+		# no external fonts or third-party anything. script-src is therefore
+		# deliberately absent, falling back to default-src 'none'.
+		#
+		# The two allowances that remain are real. Templates set inline
+		# style="" attributes (accent colours, muted text), which style-src
+		# governs — hence 'unsafe-inline'. And media fields resolve to /images
+		# on this origin, hence img-src 'self'. A deployment that moves media to
+		# a CDN (the object form's cdn_path, which src/lib/seo.ts#mediaUrl
+		# prefers) must add that origin to img-src or every picture disappears.
+		Content-Security-Policy "default-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+		-Server
+	}
+
+	# Answered by Caddy itself, for the platform's health check. `handle`, not a
+	# bare `respond /healthz`: Caddy sorts directives by its own order, and every
+	# `handle` in a site is one mutually exclusive group evaluated together — a
+	# bare `respond` would sit behind the catch-all below. As a sibling handle it
+	# wins on the more specific matcher.
+	handle /healthz {
+		respond "ok" 200
+	}
+
+	# Astro emits its bundles under /_astro with hashed filenames, so they are
+	# immutable by construction and never need revalidating.
+	handle /_astro/* {
+		header Cache-Control "public, max-age=31536000, immutable"
+		file_server
+	}
+
+	# Everything else is a real file: pages are directories with an index.html
+	# (which file_server resolves, redirecting /articles to /articles/ to match
+	# the canonical URLs), plus rss.xml, the sitemaps, robots.txt, favicon.svg
+	# and /images/*.
+	#
+	# Unmatched paths get Caddy's bare 404, because Astro only emits 404.html
+	# when src/pages/404.astro exists, and this site has none. If you add one:
+	#
+	#	handle_errors {
+	#		@404 expression {err.status_code} == 404
+	#		rewrite @404 /404.html
+	#		file_server
+	#	}
+	handle {
+		file_server
+	}
+}
