@@ -9,13 +9,13 @@ real content model looks like when the CMS is the editing surface: singletons,
 mixed lists, structured metadata, media references, and SEO on every model.
 
 ```bash
-make example-sample-site                            # site + sidecar + editor
-pnpm --filter @go-git-cms/example-sample-site dev   # just the site, :4340
+pnpm --filter @go-git-cms/example-sample-site dev   # the site, :4340
 ```
 
-`make example-sample-site` stages the site into `dist/examples/sample-site`,
-starts its preview sidecar on :4326, and opens the editor on the staged copy —
-so edits land there rather than in `examples/`. `make examples-clean` resets it.
+The site is Astro in **server** mode: pages read their content files per
+request, which is what lets the CMS preview an unsaved draft (see Preview
+below). `pnpm --filter @go-git-cms/example-sample-site build` produces the Node
+server that `Dockerfile.sample-site` ships behind Caddy.
 
 ## What's in it
 
@@ -133,20 +133,25 @@ falls back to the public path.
 
 ## Preview
 
-This site is `output: "static"`, so preview is the **sidecar** case: an SSG site
-reads its content at build time and has nothing to intercept per request, so the
-only honest preview is a real build. The sidecar has a built-in `astro` engine
-that runs `astro dev` against a working copy with the draft applied.
+This site is `output: "server"`, so preview is the **SSR middleware** case: the
+editor's Preview pane iframes the running site with a signed draft payload,
+`src/middleware.ts` (`@go-git-cms/preview-astro`) verifies it and puts the
+draft on `Astro.locals.preview`, and `src/lib/content.ts` composes it over the
+content files before anything renders. First paint is already the draft. No
+preview code appears in any template — pages just pass `Astro.locals.preview`
+into the content loaders.
 
-The whole integration is `cms.config.mjs` plus `preview.config.json`. No preview
-code appears in any template.
+Ordinary requests never touch that path: without a payload, the loaders read
+from Astro content collections (`src/content.config.ts`), exactly as a static
+build would. `/api/preview` enters preview mode when the payload is too large
+to carry on the page URL; `/api/exit-preview` clears the parked cookie.
 
-`cms-plugins/preview-astro-static.mjs` is a two-line local plugin over
-`createSidecarPlugin("astro")`. It is local rather than a package because the
-obvious name — `@go-git-cms/preview-astro` — is already the *SSR middleware*
-package, which is the other half of Astro's split personality. If SSG preview
-turns out to be common, that file is the content of the package that should
-replace it.
+The editor side is one plugin entry in `cms.config.mjs` (`@go-git-cms/preview`):
+where the site answers, and which URL each collection's documents live at.
+
+In production set `CMS_PREVIEW_SECRET` — the middleware verifies payload
+signatures with it, and without one it accepts unsigned payloads, which lets
+anyone inject content into rendered pages.
 
 ## Making it yours
 

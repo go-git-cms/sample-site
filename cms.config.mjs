@@ -1,9 +1,11 @@
 // CMS build configuration for the sample-site starter.
 //
-// This site is Astro in static mode, so preview is the *sidecar* case: the
-// editor asks a sidecar process to build the site with the draft applied, and
-// shows the result. There is no preview code in any template — the whole
-// integration is this file plus preview.config.json.
+// This site is Astro in *server* mode (astro.config.mjs), so preview is the
+// SSR middleware case: the editor's Preview pane iframes the running site with
+// a signed draft payload, src/middleware.ts puts the draft on Astro.locals,
+// and src/lib/content.ts composes it over the content files before the page
+// renders. The plugin below only needs to know where the site answers and
+// which URL each document lives at.
 //
 // ── Two environments, one file ────────────────────────────────────────────
 //
@@ -80,37 +82,29 @@ export default {
 
   plugins: [
     [
-      // A relative path rather than a package: see the file for why Astro SSG
-      // has no published engine plugin yet.
-      "./cms-plugins/preview-astro-static.mjs",
+      "@go-git-cms/preview",
       {
-        // Where the sidecar is listening. The local default is the port
-        // docker-compose.preview.yml publishes for this example; a deployed
-        // editor points at its own sidecar service via CMS_PREVIEW_SIDECAR,
-        // which Dockerfile.sample-site also feeds into the CSP so the header
-        // cannot drift from the URL baked in here.
-        sidecar: process.env.CMS_PREVIEW_SIDECAR || "http://127.0.0.1:4326",
-
-        // The session token the sidecar prints at startup. Read it from the
-        // environment rather than committing it — it is what stops any page in
-        // any of your browser tabs from driving a process that runs builds.
-        token: process.env.CMS_PREVIEW_TOKEN ?? "paste-the-token-the-sidecar-printed",
-
-        // Must match a key under `sites` in preview.config.json. Naming a site
-        // is the only thing the CMS gets to say about what runs.
-        site: "profile",
+        // Where the running site answers. Locally that is `astro dev` on :4340
+        // (.claude/launch.json's `sample-site` entry). A deployed editor sets
+        // CMS_PREVIEW_SERVER to the site's own public origin — usually the very
+        // origin /admin is served from, since this site runs the middleware —
+        // and Dockerfile.sample-site feeds the same value into the /admin CSP
+        // so the header cannot drift from the URL baked in here.
+        baseUrl: process.env.CMS_PREVIEW_SERVER || "http://localhost:4340",
 
         // Collection name -> the URL one of its documents lives at.
         //
-        // Both templates interpolate `slug`, because that is what the routes are
-        // built from (src/pages/articles/[slug].astro reads `data.slug`, not the
-        // filename). A collection missing from this map gets no Preview button,
-        // which is deliberate: a button that sometimes 404s teaches people to
-        // distrust preview. `home` and `about` are absent for the opposite
-        // reason — they are singletons at fixed URLs, and would need no template.
+        // The wildcard templates interpolate `slug`, because that is what the
+        // routes are built from (src/pages/articles/[slug].astro reads
+        // `fields.slug`, not the filename). A collection missing from this map
+        // gets no Preview button, which is deliberate: a button that sometimes
+        // 404s teaches people to distrust preview. The singletons live at
+        // fixed URLs, so their entries are plain paths.
         collections: {
           articles: "/articles/{{fields.slug}}/",
           projects: "/projects/{{fields.slug}}/",
+          home: "/",
+          about: "/about/",
         },
 
         label: "Preview",

@@ -9,6 +9,7 @@
     "preview": "astro preview --port 4340",
     "check": "astro check"
   },
+  "// dependencies": "piccolore and zod are astro's own deps, re-imported bare by the BUILT server (dist/server/chunks). dist/ sits outside any package, so its imports resolve only against this package's top-level node_modules — under pnpm's strict linking, astro's nested copies are invisible there and the pruned production install (Dockerfile.sample-site's `pnpm deploy`) crashes on boot without these. Same ranges astro declares, so they dedupe to one copy.",
   "dependencies": {
     "@astrojs/node": "^9.4.4",
     "@astrojs/rss": "^4.0.11",
@@ -18,10 +19,14 @@
     "astro": "^5.14.1",
     "gray-matter": "^4.0.3",
     "marked": "^15.0.7",
-    "yaml": "^2.6.0"
+    "piccolore": "^0.1.3",
+    "yaml": "^2.6.0",
+    "zod": "^3.25.76"
   },
+  "// devDependencies": "@go-git-cms/preview is the editor-side preview plugin cms.config.mjs names; the CMS resolves it from this directory, but Astro never imports it, so it stays out of the runtime dependency graph.",
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
+    "@go-git-cms/preview": "workspace:*",
     "@tailwindcss/vite": "^4.1.11",
     "tailwindcss": "^4.1.11",
     "typescript": "^5.6.0",
