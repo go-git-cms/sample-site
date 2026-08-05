@@ -1,22 +1,20 @@
 ---
-import { getEntry, render } from "astro:content";
+import { marked } from "marked";
 import Base from "~/layouts/Base.astro";
+import { getAbout } from "~/lib/content";
 import { mediaUrl, resolveSeo } from "~/lib/seo";
 
 // The one page that is prose rather than blocks. An about page is an essay, and
 // pushing it through a block builder would make it harder to write, not easier.
-const about = await getEntry("about", "about");
-if (!about) {
-  throw new Error("src/content/pages/about.md is missing — About is a singleton and must exist.");
-}
+const about = await getAbout(Astro.locals.preview);
 
-const { Content } = await render(about);
-const portraitSrc = mediaUrl(about.data.portrait);
+const html = await marked.parse(about.body);
+const portraitSrc = mediaUrl(about.portrait);
 
-const seo = resolveSeo(about.data.seo, {
-  title: about.data.title,
-  description: about.data.intro,
-  image: about.data.portrait,
+const seo = resolveSeo(about.seo, {
+  title: about.title,
+  description: about.intro,
+  image: about.portrait,
 });
 ---
 
@@ -24,11 +22,11 @@ const seo = resolveSeo(about.data.seo, {
   <div class="mx-auto max-w-3xl px-6 py-16">
     <header class="flex flex-col-reverse sm:flex-row sm:items-start gap-8">
       <div class="flex-1">
-        <h1 class="text-4xl font-semibold tracking-tight text-balance">{about.data.title}</h1>
+        <h1 class="text-4xl font-semibold tracking-tight text-balance">{about.title}</h1>
         {
-          about.data.intro && (
+          about.intro && (
             <p class="mt-4 text-lg text-pretty" style="color: var(--fg-muted)">
-              {about.data.intro}
+              {about.intro}
             </p>
           )
         }
@@ -47,8 +45,6 @@ const seo = resolveSeo(about.data.seo, {
       }
     </header>
 
-    <div class="prose mt-12">
-      <Content />
-    </div>
+    <div class="prose mt-12" set:html={html} />
   </div>
 </Base>

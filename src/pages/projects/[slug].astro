@@ -1,26 +1,19 @@
 ---
-import type { GetStaticPaths } from "astro";
-import { getCollection, render, type CollectionEntry } from "astro:content";
+import { marked } from "marked";
 import Base from "~/layouts/Base.astro";
 import BlockRenderer from "~/components/BlockRenderer.astro";
+import { getProject } from "~/lib/content";
 import { mediaUrl, resolveSeo } from "~/lib/seo";
 
-// See the note in articles/[slug].astro — getStaticPaths props are not inferred.
-type Props = { project: CollectionEntry<"projects"> };
-
-export const getStaticPaths: GetStaticPaths = async () => {
-  const projects = await getCollection("projects");
-  return projects.map((project) => ({
-    params: { slug: project.data.slug },
-    props: { project },
-  }));
-};
-
-const { project } = Astro.props as Props;
+// Routed on the `slug` field — see the note in articles/[slug].astro.
+const project = await getProject(Astro.params.slug ?? "", Astro.locals.preview);
+if (!project) {
+  return new Response(null, { status: 404, statusText: "Not found" });
+}
 
 // A project page is composed of blocks *and* has a Markdown body for closing
 // notes. Both are optional, so the page renders whichever exist.
-const { Content } = await render(project);
+const html = await marked.parse(project.body);
 
 const STATUS: Record<string, string> = {
   "in-progress": "In progress",
@@ -28,12 +21,12 @@ const STATUS: Record<string, string> = {
   archived: "Archived",
 };
 
-const thumbSrc = mediaUrl(project.data.thumbnail);
+const thumbSrc = mediaUrl(project.thumbnail);
 
-const seo = resolveSeo(project.data.seo, {
-  title: project.data.title,
-  description: project.data.summary,
-  image: project.data.thumbnail,
+const seo = resolveSeo(project.seo, {
+  title: project.title,
+  description: project.summary,
+  image: project.thumbnail,
 });
 ---
 
@@ -44,12 +37,12 @@ const seo = resolveSeo(project.data.seo, {
         ← Projects
       </a>
       <h1 class="mt-6 text-4xl font-semibold tracking-tight text-balance">
-        {project.data.title}
+        {project.title}
       </h1>
       {
-        project.data.summary && (
+        project.summary && (
           <p class="mt-4 text-lg text-pretty" style="color: var(--fg-muted)">
-            {project.data.summary}
+            {project.summary}
           </p>
         )
       }
@@ -58,36 +51,36 @@ const seo = resolveSeo(project.data.seo, {
           project, not decoration, so it gets markup that says so. */}
       <dl class="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-6 py-6 border-y" style="border-color: var(--line-subtle)">
         {
-          project.data.year && (
+          project.year && (
             <div>
               <dt class="font-mono text-[11px] uppercase tracking-widest" style="color: var(--fg-faint)">Year</dt>
-              <dd class="mt-1 text-sm">{project.data.year}</dd>
+              <dd class="mt-1 text-sm">{project.year}</dd>
             </div>
           )
         }
         {
-          project.data.role && (
+          project.role && (
             <div>
               <dt class="font-mono text-[11px] uppercase tracking-widest" style="color: var(--fg-faint)">Role</dt>
-              <dd class="mt-1 text-sm">{project.data.role}</dd>
+              <dd class="mt-1 text-sm">{project.role}</dd>
             </div>
           )
         }
         {
-          project.data.status && (
+          project.status && (
             <div>
               <dt class="font-mono text-[11px] uppercase tracking-widest" style="color: var(--fg-faint)">Status</dt>
-              <dd class="mt-1 text-sm">{STATUS[project.data.status]}</dd>
+              <dd class="mt-1 text-sm">{STATUS[project.status]}</dd>
             </div>
           )
         }
         {
-          project.data.url && (
+          project.url && (
             <div>
               <dt class="font-mono text-[11px] uppercase tracking-widest" style="color: var(--fg-faint)">Live</dt>
               <dd class="mt-1 text-sm">
                 <a
-                  href={project.data.url}
+                  href={project.url}
                   rel="noopener noreferrer"
                   target="_blank"
                   class="underline underline-offset-4"
@@ -101,9 +94,9 @@ const seo = resolveSeo(project.data.seo, {
       </dl>
 
       {
-        project.data.tags && project.data.tags.length > 0 && (
+        project.tags && project.tags.length > 0 && (
           <ul class="mt-6 flex flex-wrap gap-2">
-            {project.data.tags.map((t) => (
+            {project.tags.map((t) => (
               <li
                 class="font-mono text-[11px] px-2 py-0.5 rounded border"
                 style="border-color: var(--line-subtle); color: var(--fg-faint)"
@@ -127,12 +120,10 @@ const seo = resolveSeo(project.data.seo, {
       }
     </header>
 
-    <BlockRenderer blocks={project.data.blocks} />
+    <BlockRenderer blocks={project.blocks} />
 
     <div class="mx-auto max-w-3xl px-6 pb-16">
-      <div class="prose">
-        <Content />
-      </div>
+      <div class="prose" set:html={html} />
     </div>
   </article>
 </Base>

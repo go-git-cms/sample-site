@@ -1,17 +1,17 @@
 ---
-import { getCollection } from "astro:content";
 import Base from "~/layouts/Base.astro";
 import ProjectCard from "~/components/ProjectCard.astro";
+import { getProjects } from "~/lib/content";
 import { resolveSeo } from "~/lib/seo";
 
-const projects = (await getCollection("projects")).sort(
-  (a, b) => (b.data.year ?? 0) - (a.data.year ?? 0)
+const projects = (await getProjects(Astro.locals.preview)).sort(
+  (a, b) => (b.year ?? 0) - (a.year ?? 0)
 );
 
 // Tags are structured metadata rather than prose, which is what makes this
 // possible: the facet list is derived from the content, so adding a tag to a
 // project adds it to the filter without touching a template.
-const tags = [...new Set(projects.flatMap((p) => p.data.tags ?? []))].sort();
+const tags = [...new Set(projects.flatMap((p) => p.tags ?? []))].sort();
 
 const seo = resolveSeo(undefined, {
   title: "Projects",
@@ -48,14 +48,14 @@ const seo = resolveSeo(undefined, {
         <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((p) => (
             <ProjectCard
-              title={p.data.title}
-              slug={p.data.slug}
-              summary={p.data.summary}
-              year={p.data.year}
-              role={p.data.role}
-              status={p.data.status}
-              tags={p.data.tags}
-              thumbnail={p.data.thumbnail}
+              title={p.title}
+              slug={p.slug}
+              summary={p.summary}
+              year={p.year}
+              role={p.role}
+              status={p.status}
+              tags={p.tags}
+              thumbnail={p.thumbnail}
             />
           ))}
         </div>

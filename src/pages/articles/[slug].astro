@@ -1,38 +1,31 @@
 ---
-import type { GetStaticPaths } from "astro";
-import { getCollection, render, type CollectionEntry } from "astro:content";
+import { marked } from "marked";
 import Base from "~/layouts/Base.astro";
+import { getArticle } from "~/lib/content";
 import { formatDate, mediaUrl, resolveSeo } from "~/lib/seo";
-
-// getStaticPaths runs in its own scope and Astro cannot infer the props it
-// passes back, so they are declared. Worth doing rather than reaching for
-// `any`: this is what makes a typo in `article.data.*` a build error instead of
-// an empty element on the page.
-type Props = { article: CollectionEntry<"articles"> };
 
 // Routed on the `slug` *field*, not the filename. The slug is what an editor
 // controls and what the CMS's preview URL template interpolates, so the two
 // have to agree — route on the filename and every preview lands on a 404 the
 // moment someone renames a post's title without renaming its file.
-export const getStaticPaths: GetStaticPaths = async () => {
-  const articles = await getCollection("articles", ({ data }) => !data.draft);
-  return articles.map((article) => ({
-    params: { slug: article.data.slug },
-    props: { article },
-  }));
-};
+const preview = Astro.locals.preview;
+const article = await getArticle(Astro.params.slug ?? "", preview);
 
-const { article } = Astro.props as Props;
-const { Content } = await render(article);
+// Parity with the old static build: a draft has no public URL. In preview the
+// editor must still see it — the draft flag is one of the things being edited.
+if (!article || (article.draft && !preview)) {
+  return new Response(null, { status: 404, statusText: "Not found" });
+}
 
-const published = formatDate(article.data.publishDate);
-const updated = formatDate(article.data.updateDate);
-const coverSrc = mediaUrl(article.data.cover);
+const html = await marked.parse(article.body);
+const published = formatDate(article.publishDate);
+const updated = formatDate(article.updateDate);
+const coverSrc = mediaUrl(article.cover);
 
-const seo = resolveSeo(article.data.seo, {
-  title: article.data.title,
-  description: article.data.excerpt,
-  image: article.data.cover,
+const seo = resolveSeo(article.seo, {
+  title: article.title,
+  description: article.excerpt,
+  image: article.cover,
 });
 ---
 
@@ -48,16 +41,16 @@ const seo = resolveSeo(article.data.seo, {
         ← Articles
       </a>
       <h1 class="mt-6 text-4xl font-semibold tracking-tight text-balance">
-        {article.data.title}
+        {article.title}
       </h1>
       <div class="mt-4 flex flex-wrap items-center gap-x-3 font-mono text-xs" style="color: var(--fg-faint)">
         {published.iso && <time datetime={published.iso}>{published.label}</time>}
         {updated.iso && <span>· updated {updated.label}</span>}
       </div>
       {
-        article.data.tags && article.data.tags.length > 0 && (
+        article.tags && article.tags.length > 0 && (
           <ul class="mt-4 flex flex-wrap gap-2">
-            {article.data.tags.map((t) => (
+            {article.tags.map((t) => (
               <li
                 class="font-mono text-[11px] px-2 py-0.5 rounded border"
                 style="border-color: var(--line-subtle); color: var(--fg-faint)"
@@ -80,8 +73,6 @@ const seo = resolveSeo(article.data.seo, {
       }
     </header>
 
-    <div class="prose mt-10">
-      <Content />
-    </div>
+    <div class="prose mt-10" set:html={html} />
   </article>
 </Base>

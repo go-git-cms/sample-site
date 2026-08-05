@@ -1,6 +1,6 @@
 ---
-import { getCollection } from "astro:content";
 import ProjectCard from "~/components/ProjectCard.astro";
+import { getProjects } from "~/lib/content";
 
 interface Props {
   heading?: string;
@@ -10,12 +10,12 @@ interface Props {
 
 const { heading = "Selected work", intro, limit = 3 } = Astro.props;
 
-const all = await getCollection("projects");
+const all = await getProjects(Astro.locals.preview);
 const featured = all
   .sort((a, b) => {
-    const byFlag = Number(b.data.featured ?? false) - Number(a.data.featured ?? false);
+    const byFlag = Number(b.featured) - Number(a.featured);
     if (byFlag !== 0) return byFlag;
-    return (b.data.year ?? 0) - (a.data.year ?? 0);
+    return (b.year ?? 0) - (a.year ?? 0);
   })
   .slice(0, limit);
 ---
@@ -39,14 +39,14 @@ const featured = all
       <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {featured.map((p) => (
           <ProjectCard
-            title={p.data.title}
-            slug={p.data.slug}
-            summary={p.data.summary}
-            year={p.data.year}
-            role={p.data.role}
-            status={p.data.status}
-            tags={p.data.tags}
-            thumbnail={p.data.thumbnail}
+            title={p.title}
+            slug={p.slug}
+            summary={p.summary}
+            year={p.year}
+            role={p.role}
+            status={p.status}
+            tags={p.tags}
+            thumbnail={p.thumbnail}
           />
         ))}
       </div>
