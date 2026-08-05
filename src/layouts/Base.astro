@@ -1,4 +1,5 @@
 ---
+import PreviewRuntime from "~/components/PreviewRuntime.astro";
 import Seo from "~/components/Seo.astro";
 import SiteHeader from "~/components/SiteHeader.astro";
 import SiteFooter from "~/components/SiteFooter.astro";
@@ -33,5 +34,7 @@ const { seo, type, publishedTime, modifiedTime, footer = true } = Astro.props;
       <slot />
     </main>
     {footer && <SiteFooter />}
+    {/* Only while a draft is active; published pages ship no JavaScript. */}
+    {Astro.locals.preview && <PreviewRuntime />}
   </body>
 </html>
