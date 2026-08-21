@@ -1,21 +1,22 @@
 # sample-site
 
 A personal profile starter: Astro + Tailwind, block-composed pages, modelled end
-to end in `go-git-cms.yml`.
+to end in `go-git-cms.yml` for [go-git-cms](https://github.com/go-git-cms/gogitcms).
 
-Unlike the `preview-*` examples — which are eight variations on one narrow
-question — this is a site you could plausibly deploy. It exists to show what a
-real content model looks like when the CMS is the editing surface: singletons,
-mixed lists, structured metadata, media references, and SEO on every model.
+Clone it, point it at your own CMS, and edit it — it is a site you could
+plausibly deploy, not a snippet. It exists to show what a real content model
+looks like when the CMS is the editing surface: singletons, mixed lists,
+structured metadata, media references, and SEO on every model.
 
 ```bash
-pnpm --filter @go-git-cms/example-sample-site dev   # the site, :4340
+pnpm install
+pnpm dev            # the site, :4340
 ```
 
 The site is Astro in **server** mode: pages read their content files per
 request, which is what lets the CMS preview an unsaved draft (see Preview
-below). `pnpm --filter @go-git-cms/example-sample-site build` produces the Node
-server that `Dockerfile.sample-site` ships behind Caddy.
+below). `pnpm build` produces the Node server that the `Dockerfile` ships behind
+Caddy.
 
 ## What's in it
 
@@ -161,5 +162,7 @@ anyone inject content into rendered pages.
    and the sitemap all derive from it.
 3. `src/styles/global.css` — the palette is one ink ramp plus semantic aliases.
    Repaint by editing the `@theme` block; nothing imports the CMS design system.
-4. Replace the content in `src/content/`, and the models in `go-git-cms.yml`
+4. `cms.config.mjs` — point `API_URL` at your CMS and set the workspace,
+   repository and project the editor should open.
+5. Replace the content in `src/content/`, and the models in `go-git-cms.yml`
    that describe it.
