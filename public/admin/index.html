@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Go·Git CMS</title>
+
+    <!--
+      Root-absolute so Vite rebases them onto the build's --base (/app/ when the
+      binary embeds this SPA). The dark variants match the OS preference, not the
+      in-app theme toggle — a favicon can't read the app's theme state.
+    -->
+    <link rel="icon" href="/admin/favicon-32.png" sizes="32x32" type="image/png" media="(prefers-color-scheme: light)" />
+    <link rel="icon" href="/admin/favicon-16.png" sizes="16x16" type="image/png" media="(prefers-color-scheme: light)" />
+    <link rel="icon" href="/admin/favicon-32-dark.png" sizes="32x32" type="image/png" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="/admin/favicon-16-dark.png" sizes="16x16" type="image/png" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="/admin/favicon-48.png" sizes="48x48" type="image/png" />
+    <link rel="apple-touch-icon" href="/admin/apple-touch-icon-180.png" sizes="180x180" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400..600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      html, body { height: 100%; margin: 0; overflow: hidden; }
+      /* height (not min-height) bounds the app to the viewport so panes scroll
+         internally instead of growing the page. */
+      #root { display: flex; flex-direction: column; height: 100%; }
+      #root > * { flex: 1 1 auto; min-height: 0; }
+    </style>
+    <script type="module" crossorigin src="/admin/app.js?v=8c13c55e"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
