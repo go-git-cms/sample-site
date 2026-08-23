@@ -36,14 +36,42 @@ WORKDIR /src
 # workspace dependencies, and pnpm needs the lockfile and workspace manifest to
 # resolve them.
 COPY . .
-# GitHub Packages auth comes in with the context: COPY . . above includes the
-# repo's .npmrc (registry mapping + token — .dockerignore admits it on purpose,
-# see the note there), and pnpm reads it from /src as workspace config. A plain
-# COPY rather than the secret mount the other Dockerfiles use, because Railway's
-# builder rejects `--mount=type=secret` at parse time. The token therefore sits
-# in this build stage's layers — which the runtime stage below never inherits,
-# so the shipped image carries the pruned /out and nothing else.
-RUN pnpm install --frozen-lockfile --filter @go-git-cms/example-sample-site...
+# A read:packages credential. The site's own dependencies are all workspace
+# links, but `deploy` below re-resolves the *whole* workspace before it prunes,
+# and apps/docs depends on @go-git-cms/plugin-mdx, which lives on GitHub
+# Packages and refuses anonymous reads. So this build needs one after all — set
+# NPM_TOKEN as a build variable on Railway.
+#
+# A build-arg rather than a BuildKit secret because Railway's builder rejects
+# `--mount=type=secret` at parse time. That is a real downgrade — the value is
+# readable by anything that can read this *stage* — so it is written and deleted
+# inside each RUN that needs it, and the runtime stage below copies artifacts
+# out rather than inheriting the layer. Never push a build stage (`--target`)
+# or a registry build cache from this file anywhere public, and scope the
+# credential to read:packages and nothing else.
+#
+# `docker build --check` flags this as SecretsUsedInArgOrEnv. Expected, and
+# not fixable here — the mount it wants is the thing Railway cannot parse.
+#
+# Declared after COPY . . so rotating it does not invalidate that layer.
+ARG NPM_TOKEN=
+
+# --trust-lockfile skips pnpm's supply-chain verification pass, which re-applies
+# minimumReleaseAge/trustPolicy to every entry in the lockfile — all ~2000 of
+# them, one registry metadata fetch each, filter or no filter. Sound here
+# because the lockfile is our own committed one and the install is frozen:
+# nothing is being resolved, so there is no new version for the policy to catch.
+#
+# The scope mapping comes from the repo's own .npmrc, which COPY . . brings in.
+# It deliberately carries no credential: a project-level .npmrc outranks the
+# user-level file written here and would silently replace it.
+RUN set -eu; \
+    if [ -n "$NPM_TOKEN" ]; then \
+      printf '//npm.pkg.github.com/:_authToken=%s\n' "$NPM_TOKEN" > /root/.npmrc; \
+    fi; \
+    pnpm install --frozen-lockfile --trust-lockfile \
+      --filter @go-git-cms/example-sample-site...; \
+    rm -f /root/.npmrc
 
 # The self-hosted editor, served at /admin (examples/sample-site/cms.config.mjs).
 #
@@ -72,7 +100,8 @@ ARG GITCMS_PROJECT=
 ARG CMS_PREVIEW_SERVER=
 RUN if [ -n "$GITCMS_API_URL" ]; then \
       set -eu; \
-      pnpm install --frozen-lockfile --filter @go-git-cms/gitcms-ide...; \
+      pnpm install --frozen-lockfile --trust-lockfile \
+        --filter @go-git-cms/gitcms-ide...; \
       cd examples/sample-site; \
       GITCMS_API_URL="$GITCMS_API_URL" \
       GITCMS_WORKSPACE_ID="$GITCMS_WORKSPACE_ID" \
@@ -95,8 +124,25 @@ RUN pnpm --filter @go-git-cms/example-sample-site build
 # genuine runtime dependencies — marked, gray-matter, yaml — external, so
 # node_modules still ships, just without vite, typescript and the rest of the
 # build chain.
-RUN pnpm --filter @go-git-cms/example-sample-site deploy --prod --legacy /out \
- && cp -r examples/sample-site/dist /out/dist
+# This step is why NPM_TOKEN exists here: `deploy` re-resolves every importer in
+# the workspace before it prunes, apps/docs among them, so it reaches GitHub
+# Packages for plugin-mdx even though nothing in this image uses it.
+#
+# auto-install-peers=false covers a second, quieter problem: --prod drops the
+# dependencies that link the @go-git-cms packages into the workspace, leaving
+# only peer dependencies on them, which pnpm would satisfy by downloading the
+# *published* copies — shipping packages that are not the ones the site was just
+# built against. Turned off, it links the workspace copies into /out.
+# (Not usable on the frozen installs above: a frozen install refuses any
+# autoInstallPeers that differs from the value recorded in the lockfile.)
+RUN set -eu; \
+    if [ -n "$NPM_TOKEN" ]; then \
+      printf '//npm.pkg.github.com/:_authToken=%s\n' "$NPM_TOKEN" > /root/.npmrc; \
+    fi; \
+    pnpm --filter @go-git-cms/example-sample-site deploy --prod --legacy \
+      --trust-lockfile --config.auto-install-peers=false /out; \
+    rm -f /root/.npmrc; \
+    cp -r examples/sample-site/dist /out/dist
 
 # --- Runtime ----------------------------------------------------------------
 # Caddy in front of the Astro server rather than exposing Node directly: it
