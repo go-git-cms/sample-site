@@ -54,6 +54,12 @@ COPY . .
 # not fixable here — the mount it wants is the thing Railway cannot parse.
 #
 # Declared after COPY . . so rotating it does not invalidate that layer.
+#
+# The RUNs below read it with `printenv NPM_TOKEN` rather than "$NPM_TOKEN":
+# BuildKit substitutes Dockerfile variables into a RUN before it prints the
+# instruction, so a plain reference puts the credential in clear text in the
+# build log. Escaping the dollar does not help — the shell then reads the
+# literal name. See the longer note in Dockerfile.docs.
 ARG NPM_TOKEN=
 
 # --trust-lockfile skips pnpm's supply-chain verification pass, which re-applies
@@ -66,9 +72,7 @@ ARG NPM_TOKEN=
 # It deliberately carries no credential: a project-level .npmrc outranks the
 # user-level file written here and would silently replace it.
 RUN set -eu; \
-    if [ -n "$NPM_TOKEN" ]; then \
-      printf '//npm.pkg.github.com/:_authToken=%s\n' "$NPM_TOKEN" > /root/.npmrc; \
-    fi; \
+    { printf '//npm.pkg.github.com/:_authToken='; printenv NPM_TOKEN || true; } > /root/.npmrc; \
     pnpm install --frozen-lockfile --trust-lockfile \
       --filter @go-git-cms/example-sample-site...; \
     rm -f /root/.npmrc
@@ -136,9 +140,7 @@ RUN pnpm --filter @go-git-cms/example-sample-site build
 # (Not usable on the frozen installs above: a frozen install refuses any
 # autoInstallPeers that differs from the value recorded in the lockfile.)
 RUN set -eu; \
-    if [ -n "$NPM_TOKEN" ]; then \
-      printf '//npm.pkg.github.com/:_authToken=%s\n' "$NPM_TOKEN" > /root/.npmrc; \
-    fi; \
+    { printf '//npm.pkg.github.com/:_authToken='; printenv NPM_TOKEN || true; } > /root/.npmrc; \
     pnpm --filter @go-git-cms/example-sample-site deploy --prod --legacy \
       --trust-lockfile --config.auto-install-peers=false /out; \
     rm -f /root/.npmrc; \
