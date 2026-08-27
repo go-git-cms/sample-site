@@ -29,5 +29,4 @@ tags:
 title: Quarry
 year: 2022
 ---
-
 I still think retiring a tool on purpose is underrated.
