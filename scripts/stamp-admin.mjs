@@ -1,6 +1,6 @@
 // Cache-bust the editor bundle in public/admin/index.html.
 //
-// `gitcms-ide build` emits app.js and app.css with deliberately stable names —
+// `gogitcms-editor build` emits app.js and app.css with deliberately stable names —
 // three files a self-hoster can drop on any static host without thinking about
 // chunk graphs. That is right for something deployed once, and wrong for
 // something `make docs-dev` rebuilds on every run: the names never change, so a

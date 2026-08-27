@@ -105,7 +105,7 @@ ARG CMS_PREVIEW_SERVER=
 RUN if [ -n "$GITCMS_API_URL" ]; then \
       set -eu; \
       pnpm install --frozen-lockfile --trust-lockfile \
-        --filter @go-git-cms/gitcms-ide...; \
+        --filter @go-git-cms/editor...; \
       cd examples/sample-site; \
       GITCMS_API_URL="$GITCMS_API_URL" \
       GITCMS_WORKSPACE_ID="$GITCMS_WORKSPACE_ID" \
@@ -113,7 +113,7 @@ RUN if [ -n "$GITCMS_API_URL" ]; then \
       GITCMS_PROJECT="$GITCMS_PROJECT" \
       CMS_PREVIEW_SERVER="$CMS_PREVIEW_SERVER" \
       CI=1 \
-        node ../../apps/gitcms-ide/bin/gitcms-ide.mjs build --out public/admin --no-tty; \
+        node ../../apps/editor/bin/gogitcms-editor.mjs build --out public/admin --no-tty; \
       node scripts/stamp-admin.mjs public/admin; \
     else \
       echo "GITCMS_API_URL unset — skipping the /admin editor build"; \

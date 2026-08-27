@@ -76,7 +76,7 @@
 		# off-origin needs that origin in img-src too, or thumbnails vanish.
 		header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' {$CMS_API_ORIGIN:} {$CMS_WS_ORIGINS:} {$CMS_PREVIEW_ORIGIN:}; frame-src 'self' {$CMS_PREVIEW_ORIGIN:}; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 
-		# gitcms-ide emits app.js/app.css under deliberately stable names, so
+		# gogitcms-editor emits app.js/app.css under deliberately stable names, so
 		# the HTML references them as app.js?v=<content hash> (stamp-admin.mjs)
 		# and the shell itself must never be cached — a cached index.html keeps
 		# pointing at the previous build's ?v= and the editor silently stays on
