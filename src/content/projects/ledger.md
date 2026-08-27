@@ -47,6 +47,4 @@ title: Ledger
 url: https://example.com/ledger
 year: 2025
 ---
-
-Ledger is still running, largely unchanged, which I consider the highest
-compliment a system can receive.
+Ledger is still running, largely unchanged, which I consider the highest compliment a system can receive.
