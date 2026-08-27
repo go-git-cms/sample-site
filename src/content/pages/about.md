@@ -21,3 +21,7 @@ I write things down. Not because documentation is virtuous, but because writing 
 ## Elsewhere
 
 The best way to reach me is email. I read everything and reply to most of it, though not always quickly.
+
+I have spent about fifteen years writing software that other people have to maintain, which is a different job from writing software that works.
+
+Most of what I believe about engineering comes from being on call for my own decisions. A system you cannot reason about at 3am is not a good system, however elegant it looked in review. That belief has cost me a lot of clever code.
