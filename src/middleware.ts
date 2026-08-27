@@ -1,5 +1,5 @@
 import type { MiddlewareHandler } from 'astro';
-import { previewMiddleware } from '@go-git-cms/preview-astro';
+import { previewMiddleware } from '@gogitcms/preview-astro';
 
 // CMS draft mode (SSR). Verifies the signed preview payload from the editor,
 // puts it on Astro.locals.preview, parks it in the __cms_preview cookie so

@@ -1,5 +1,5 @@
 {
-  "name": "@go-git-cms/example-sample-site",
+  "name": "@gogitcms/example-sample-site",
   "private": true,
   "type": "module",
   "description": "A personal profile starter — Astro + Tailwind, block-composed pages, modelled end to end in go-git-cms.yml.",
@@ -14,8 +14,8 @@
     "@astrojs/node": "^9.4.4",
     "@astrojs/rss": "^4.0.11",
     "@astrojs/sitemap": "^3.6.0",
-    "@go-git-cms/preview-astro": "workspace:*",
-    "@go-git-cms/preview-core": "workspace:*",
+    "@gogitcms/preview-astro": "workspace:*",
+    "@gogitcms/preview-core": "workspace:*",
     "astro": "^5.14.1",
     "gray-matter": "^4.0.3",
     "marked": "^15.0.7",
@@ -23,10 +23,10 @@
     "yaml": "^2.6.0",
     "zod": "^3.25.76"
   },
-  "// devDependencies": "@go-git-cms/preview is the editor-side preview plugin cms.config.mjs names; the CMS resolves it from this directory, but Astro never imports it, so it stays out of the runtime dependency graph.",
+  "// devDependencies": "@gogitcms/preview is the editor-side preview plugin cms.config.mjs names; the CMS resolves it from this directory, but Astro never imports it, so it stays out of the runtime dependency graph.",
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
-    "@go-git-cms/preview": "workspace:*",
+    "@gogitcms/preview": "workspace:*",
     "@tailwindcss/vite": "^4.1.11",
     "tailwindcss": "^4.1.11",
     "typescript": "^5.6.0",

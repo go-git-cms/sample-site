@@ -1,5 +1,5 @@
 import type { APIContext } from "astro";
-import { previewEntryRoute } from "@go-git-cms/preview-astro";
+import { previewEntryRoute } from "@gogitcms/preview-astro";
 
 // Enter preview mode: verifies the payload, parks it in the __cms_preview
 // cookie and redirects to ?redirect=<path>. The CMS iframe loads this first

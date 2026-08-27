@@ -3,7 +3,7 @@
 # The sample site (examples/sample-site): Astro SSR on Node, fronted by Caddy —
 # the same shape as Dockerfile.website. The site is `output: "server"`
 # (astro.config.mjs): pages read their content files per request, which is what
-# lets the @go-git-cms/preview-astro middleware compose an unsaved CMS draft
+# lets the @gogitcms/preview-astro middleware compose an unsaved CMS draft
 # over the real file. Caddy terminates the edge, serves the hashed client
 # assets (and the /admin editor when one is built) straight off disk, and
 # proxies everything else to the Node server.
@@ -32,7 +32,7 @@ RUN corepack enable
 WORKDIR /src
 
 # The whole workspace rather than examples/sample-site alone: the site imports
-# @go-git-cms/preview-astro (and its preview-ssr/preview-core chain) as
+# @gogitcms/preview-astro (and its preview-ssr/preview-core chain) as
 # workspace dependencies, and pnpm needs the lockfile and workspace manifest to
 # resolve them.
 COPY . .
@@ -74,7 +74,7 @@ ARG NPM_TOKEN=
 RUN set -eu; \
     { printf '//npm.pkg.github.com/:_authToken='; printenv NPM_TOKEN || true; } > /root/.npmrc; \
     pnpm install --frozen-lockfile --trust-lockfile \
-      --filter @go-git-cms/example-sample-site...; \
+      --filter @gogitcms/example-sample-site...; \
     rm -f /root/.npmrc
 
 # The self-hosted editor, served at /admin (examples/sample-site/cms.config.mjs).
@@ -105,7 +105,7 @@ ARG CMS_PREVIEW_SERVER=
 RUN if [ -n "$GITCMS_API_URL" ]; then \
       set -eu; \
       pnpm install --frozen-lockfile --trust-lockfile \
-        --filter @go-git-cms/editor...; \
+        --filter @gogitcms/editor...; \
       cd examples/sample-site; \
       GITCMS_API_URL="$GITCMS_API_URL" \
       GITCMS_WORKSPACE_ID="$GITCMS_WORKSPACE_ID" \
@@ -121,7 +121,7 @@ RUN if [ -n "$GITCMS_API_URL" ]; then \
 
 # Runs after the editor build on purpose: Astro copies public/ into dist/client,
 # so public/admin has to exist by now or it never reaches the image.
-RUN pnpm --filter @go-git-cms/example-sample-site build
+RUN pnpm --filter @gogitcms/example-sample-site build
 
 # Prune to production dependencies. Astro bundles the application code (the
 # preview packages are `noExternal`, so they land in the bundle too) but leaves
@@ -133,7 +133,7 @@ RUN pnpm --filter @go-git-cms/example-sample-site build
 # Packages for plugin-mdx even though nothing in this image uses it.
 #
 # auto-install-peers=false covers a second, quieter problem: --prod drops the
-# dependencies that link the @go-git-cms packages into the workspace, leaving
+# dependencies that link the @gogitcms packages into the workspace, leaving
 # only peer dependencies on them, which pnpm would satisfy by downloading the
 # *published* copies — shipping packages that are not the ones the site was just
 # built against. Turned off, it links the workspace copies into /out.
@@ -141,7 +141,7 @@ RUN pnpm --filter @go-git-cms/example-sample-site build
 # autoInstallPeers that differs from the value recorded in the lockfile.)
 RUN set -eu; \
     { printf '//npm.pkg.github.com/:_authToken='; printenv NPM_TOKEN || true; } > /root/.npmrc; \
-    pnpm --filter @go-git-cms/example-sample-site deploy --prod --legacy \
+    pnpm --filter @gogitcms/example-sample-site deploy --prod --legacy \
       --trust-lockfile --config.auto-install-peers=false /out; \
     rm -f /root/.npmrc; \
     cp -r examples/sample-site/dist /out/dist

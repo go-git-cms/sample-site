@@ -22,10 +22,10 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
     ssr: {
-      // The @go-git-cms preview packages ship ESM with extensionless relative
+      // The @gogitcms preview packages ship ESM with extensionless relative
       // imports, which Node can't resolve when they're externalized — bundle
       // them so Vite resolves the imports instead.
-      noExternal: [/^@go-git-cms\/preview-/],
+      noExternal: [/^@gogitcms\/preview-/],
     },
   },
 });

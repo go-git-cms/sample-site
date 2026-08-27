@@ -18,7 +18,7 @@ import path from "node:path";
 import { getCollection, getEntry } from "astro:content";
 import matter from "gray-matter";
 import { parse as parseYaml } from "yaml";
-import type { PreviewPayload, PreviewOverride } from "@go-git-cms/preview-core";
+import type { PreviewPayload, PreviewOverride } from "@gogitcms/preview-core";
 import type { MediaRef, SeoBlock } from "./seo";
 
 // The project root (examples/sample-site) — paths below are project-relative.

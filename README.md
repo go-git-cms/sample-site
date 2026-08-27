@@ -136,7 +136,7 @@ falls back to the public path.
 
 This site is `output: "server"`, so preview is the **SSR middleware** case: the
 editor's Preview pane iframes the running site with a signed draft payload,
-`src/middleware.ts` (`@go-git-cms/preview-astro`) verifies it and puts the
+`src/middleware.ts` (`@gogitcms/preview-astro`) verifies it and puts the
 draft on `Astro.locals.preview`, and `src/lib/content.ts` composes it over the
 content files before anything renders. First paint is already the draft. No
 preview code appears in any template — pages just pass `Astro.locals.preview`
@@ -147,7 +147,7 @@ from Astro content collections (`src/content.config.ts`), exactly as a static
 build would. `/api/preview` enters preview mode when the payload is too large
 to carry on the page URL; `/api/exit-preview` clears the parked cookie.
 
-The editor side is one plugin entry in `cms.config.mjs` (`@go-git-cms/preview`):
+The editor side is one plugin entry in `cms.config.mjs` (`@gogitcms/preview`):
 where the site answers, and which URL each collection's documents live at.
 
 In production set `CMS_PREVIEW_SECRET` — the middleware verifies payload

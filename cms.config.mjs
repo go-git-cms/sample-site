@@ -82,7 +82,7 @@ export default {
 
   plugins: [
     [
-      "@go-git-cms/preview",
+      "@gogitcms/preview",
       {
         // Where the running site answers. Locally that is `astro dev` on :4340
         // (.claude/launch.json's `sample-site` entry). A deployed editor sets
