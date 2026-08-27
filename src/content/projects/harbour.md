@@ -38,6 +38,4 @@ tags:
 title: Harbour
 year: 2024
 ---
-
-Harbour is the project I point at when someone tells me tooling is not a
-product problem.
+Harbour is the project I point at when someone tells me tooling is not a product problem.
