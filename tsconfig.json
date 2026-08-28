@@ -1,7 +1,15 @@
 {
   "extends": "astro/tsconfigs/strict",
   "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist"],
+  // public/ is served verbatim and belongs to no program — and `make
+  // sample-site-admin` puts a ~2 MB minified bundle in it (public/admin, the
+  // self-hosted editor), which `astro check` will load into the language server
+  // until it runs the heap out. apps/docs excludes it for the same reason;
+  // this site had the same bundle and not the same exclusion, so `make
+  // sample-site-check` died with "JavaScript heap out of memory" rather than a
+  // type error. `local/` is the local-mode index cache, which is likewise not
+  // source.
+  "exclude": ["dist", "public", "local"],
   "compilerOptions": {
     "paths": {
       "~/*": ["./src/*"]

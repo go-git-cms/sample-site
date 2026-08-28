@@ -1,0 +1,131 @@
+---
+// The newsletter signup (go-git-cms.yml, forms[1]).
+//
+// Deliberately the other kind of form: no store, so its submissions live only
+// in the CMS database. An email list does not belong in a public repository,
+// and nobody wants a commit per subscriber — which is exactly what `store:`
+// being optional is for.
+//
+// It sits at the foot of an article rather than on a page of its own, so unlike
+// the contact form it never navigates away on success: the visitor was reading
+// something, and the signup is a footnote to it.
+const subscribed = Astro.url.searchParams.has("subscribed");
+const error = Astro.url.searchParams.get("subscribeError");
+---
+
+<aside
+  class="mt-16 rounded-lg border p-6"
+  style="border-color: var(--line-subtle)"
+  aria-labelledby="newsletter-heading"
+>
+  <h2 id="newsletter-heading" class="text-base font-semibold tracking-tight">
+    New posts, occasionally
+  </h2>
+  <p class="mt-1 text-sm" style="color: var(--fg-muted)">
+    A short email when something goes up. No more than monthly.
+  </p>
+
+  <form method="post" action="/api/forms/newsletter" data-newsletter-form class="mt-4 grid gap-3">
+    <p
+      data-newsletter-status
+      role="status"
+      hidden={!subscribed && !error}
+      class="text-sm"
+      style="color: var(--fg-muted)"
+    >
+      {subscribed ? "You're on the list. Thanks!" : error}
+    </p>
+
+    <div class="flex flex-wrap items-start gap-3">
+      <div class="grid flex-1 gap-1 min-w-[16rem]">
+        <label for="newsletter-email" class="sr-only">Email</label>
+        <input
+          id="newsletter-email"
+          name="email"
+          type="email"
+          required
+          placeholder="you@example.com"
+          autocomplete="email"
+          class="w-full rounded-md border px-3 py-2 text-sm bg-transparent"
+          style="border-color: var(--line-subtle)"
+        />
+        <p data-error-for="email" class="text-xs" style="color: var(--fg-faint)" hidden></p>
+      </div>
+      <button
+        type="submit"
+        class="rounded-md px-4 py-2 text-sm font-medium border transition-opacity hover:opacity-80 disabled:opacity-50"
+        style="border-color: var(--line-subtle)"
+      >
+        Subscribe
+      </button>
+    </div>
+
+    <div class="grid gap-1">
+      <label class="flex items-start gap-2 text-xs" style="color: var(--fg-muted)">
+        {/* Required by the config. An unchecked box is not sent by the browser
+            at all, so the endpoint turns its absence into an explicit false —
+            otherwise "didn't tick it" would arrive as "didn't answer". */}
+        <input name="consent" type="checkbox" required class="mt-0.5" />
+        <span>Yes, email me when there's a new post.</span>
+      </label>
+      <p data-error-for="consent" class="text-xs" style="color: var(--fg-faint)" hidden></p>
+    </div>
+
+    {/* This form's honeypot is named `website` — each form names its own, so a
+        bot that learns one has learned one. */}
+    <div class="absolute w-px h-px -m-px overflow-hidden" aria-hidden="true">
+      <label for="newsletter-website">Website</label>
+      <input id="newsletter-website" name="website" type="text" tabindex="-1" autocomplete="off" />
+    </div>
+  </form>
+</aside>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>("[data-newsletter-form]");
+  if (form) {
+    const status = form.querySelector<HTMLElement>("[data-newsletter-status]");
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      for (const p of form.querySelectorAll<HTMLElement>("[data-error-for]")) {
+        p.hidden = true;
+        p.textContent = "";
+      }
+      const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+      if (button) button.disabled = true;
+
+      try {
+        const res = await fetch(form.action, {
+          method: "POST",
+          headers: { Accept: "application/json" },
+          body: new FormData(form),
+        });
+        const body = await res.json();
+        if (body.ok) {
+          // Replaced rather than navigated away from: the visitor is mid-article.
+          form.querySelectorAll("div, button").forEach((el) => ((el as HTMLElement).hidden = true));
+          if (status) {
+            status.textContent = "You're on the list. Thanks!";
+            status.hidden = false;
+          }
+          return;
+        }
+        for (const err of body.errors ?? []) {
+          const target = err.path
+            ? form.querySelector<HTMLElement>(`[data-error-for="${err.path}"]`)
+            : status;
+          if (target) {
+            target.textContent = err.message;
+            target.hidden = false;
+          }
+        }
+      } catch {
+        if (status) {
+          status.textContent = "We couldn't reach the server. Please try again in a moment.";
+          status.hidden = false;
+        }
+      } finally {
+        if (button) button.disabled = false;
+      }
+    });
+  }
+</script>

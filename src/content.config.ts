@@ -26,6 +26,24 @@ import { glob } from "astro/loaders";
 const isoDate = z.coerce.date();
 
 /**
+ * An optional date, and the same trap as above one step further on.
+ *
+ * `isoDate.optional()` accepts an absent key. It does not accept an EMPTY one —
+ * and empty is exactly what the CMS writes when an editor clears a date field:
+ * the field is declared in the model, so it is serialized on every save, and
+ * `updateDate: ""` is how "no value" is spelled. `z.coerce.date()` turns that
+ * into an Invalid Date and the build stops.
+ *
+ * So it is not enough for the schema to accept what the CMS writes for a filled
+ * field; it has to accept what the CMS writes for an emptied one. Every optional
+ * date field wants this rather than `.optional()`.
+ */
+const optionalIsoDate = z.preprocess(
+  (v) => (v === "" || v === null ? undefined : v),
+  isoDate.optional(),
+);
+
+/**
  * The object form of a media field, exactly as the CMS stores it: the id is
  * authoritative and survives a rename, the paths are denormalized copies the
  * build can read without calling the CMS.
@@ -117,7 +135,7 @@ const articles = defineCollection({
     title: z.string(),
     slug: z.string(),
     publishDate: isoDate,
-    updateDate: isoDate.optional(),
+    updateDate: optionalIsoDate,
     draft: z.boolean().optional(),
     featured: z.boolean().optional(),
     excerpt: z.string().optional(),

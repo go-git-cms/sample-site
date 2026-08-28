@@ -1,0 +1,31 @@
+---
+import Base from "~/layouts/Base.astro";
+import { resolveSeo } from "~/lib/seo";
+
+// Where a successful contact submission lands. It is the `redirect_to` in the
+// form's config as well, so a post made directly to the content API — bypassing
+// this site's endpoint — ends up somewhere sensible too.
+//
+// noindex: a thank-you page has nothing to offer a search result, and one that
+// ranks is a page people arrive at without having sent anything.
+const seo = resolveSeo(
+  { noindex: true },
+  { title: "Thanks", description: "Your message is in." },
+);
+---
+
+<Base seo={seo}>
+  <div class="mx-auto max-w-2xl px-6 py-24 text-center">
+    <h1 class="text-4xl font-semibold tracking-tight">Thanks — that's in.</h1>
+    <p class="mt-4 text-base" style="color: var(--fg-muted)">
+      It's sitting in the CMS's Forms section now, waiting to be read.
+    </p>
+    <a
+      href="/"
+      class="mt-10 inline-block rounded-md px-4 py-2 text-sm font-medium border transition-opacity hover:opacity-80"
+      style="border-color: var(--line-subtle)"
+    >
+      Back to the site
+    </a>
+  </div>
+</Base>

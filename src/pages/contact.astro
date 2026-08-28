@@ -1,0 +1,28 @@
+---
+import Base from "~/layouts/Base.astro";
+import ContactForm from "~/components/ContactForm.astro";
+import { resolveSeo } from "~/lib/seo";
+
+// Server-rendered: the page reads ?error= from a no-JavaScript submission.
+export const prerender = false;
+
+// Through resolveSeo like every other page, so the title suffix is applied in
+// the one place that applies it rather than being spelled out here.
+const seo = resolveSeo(undefined, {
+  title: "Contact",
+  description: "Get in touch — hiring, project work, or anything else.",
+});
+---
+
+<Base seo={seo}>
+  <div class="mx-auto max-w-2xl px-6 py-16">
+    <h1 class="text-4xl font-semibold tracking-tight text-balance">Contact</h1>
+    <p class="mt-4 text-base" style="color: var(--fg-muted)">
+      Leave your name, email, and a message and I'll get back to you.
+    </p>
+
+    <div class="mt-10">
+      <ContactForm />
+    </div>
+  </div>
+</Base>

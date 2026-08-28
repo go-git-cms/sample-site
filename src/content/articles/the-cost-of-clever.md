@@ -9,7 +9,7 @@ tags:
   - engineering
   - craft
 title: The cost of clever
-updateDate: ""
+updateDate: "2026-08-24"
 ---
 There is a particular kind of code I used to be proud of. Dense, minimal, doing four things in one expression. Reviewers would leave a comment saying "nice" and I would feel the way you feel when someone laughs at your joke.
 

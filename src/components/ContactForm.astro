@@ -1,0 +1,233 @@
+---
+// The contact form (go-git-cms.yml, forms[0]).
+//
+// The CMS validates and stores the submission; the markup is the site's own.
+// That split is deliberate — a CMS that shipped the <form> would be shipping a
+// front end — and this file is what it looks like from the site's side.
+//
+// Three behaviours worth reading for:
+//
+//   * It works with JavaScript off. A native POST to /api/forms/contact ends in
+//     a 303 to /thanks, or back here with ?error=. Everything below that is an
+//     upgrade.
+//   * `company` is the honeypot the config names. It is not a declared field,
+//     so no legitimate submitter ever fills it in — and a bot that does gets a
+//     completely normal success, because the CMS records it as spam rather than
+//     refusing it.
+//   * `budget` is conditional: the config only asks for it when the reason is
+//     "project", and only ACCEPTS it then. The script hides it otherwise, and
+//     the server enforces the same rule — so a hidden field that gets posted
+//     anyway is rejected rather than quietly stored.
+const error = Astro.url.searchParams.get("error");
+---
+
+<form
+  method="post"
+  action="/api/forms/contact"
+  data-contact-form
+  class="grid gap-6"
+  novalidate
+>
+  {
+    error && (
+      <p
+        data-form-error
+        role="alert"
+        class="rounded-md border px-4 py-3 text-sm"
+        style="border-color: var(--line-subtle); color: var(--fg-muted)"
+      >
+        {error}
+      </p>
+    )
+  }
+  <p data-form-error role="alert" hidden class="rounded-md border px-4 py-3 text-sm" style="border-color: var(--line-subtle); color: var(--fg-muted)"></p>
+
+  <div class="grid gap-2">
+    <label for="contact-name" class="text-sm font-medium">Your name</label>
+    <input
+      id="contact-name"
+      name="name"
+      type="text"
+      required
+      maxlength="120"
+      autocomplete="name"
+      class="rounded-md border px-3 py-2 text-sm bg-transparent"
+      style="border-color: var(--line-subtle)"
+    />
+    <p data-error-for="name" class="text-xs" style="color: var(--fg-faint)" hidden></p>
+  </div>
+
+  <div class="grid gap-2">
+    <label for="contact-email" class="text-sm font-medium">Email</label>
+    <input
+      id="contact-email"
+      name="email"
+      type="email"
+      required
+      autocomplete="email"
+      class="rounded-md border px-3 py-2 text-sm bg-transparent"
+      style="border-color: var(--line-subtle)"
+    />
+    <p data-error-for="email" class="text-xs" style="color: var(--fg-faint)" hidden></p>
+  </div>
+
+  <div class="grid gap-2">
+    <label for="contact-reason" class="text-sm font-medium">What's this about?</label>
+    <select
+      id="contact-reason"
+      name="reason"
+      required
+      class="rounded-md border px-3 py-2 text-sm bg-transparent"
+      style="border-color: var(--line-subtle)"
+    >
+      <option value="">Choose one…</option>
+      <option value="hiring">Hiring</option>
+      <option value="project">A project</option>
+      <option value="other">Something else</option>
+    </select>
+    <p data-error-for="reason" class="text-xs" style="color: var(--fg-faint)" hidden></p>
+  </div>
+
+  {/* Only asked for when reason is "project". Hidden by the script below;
+      visible with JavaScript off, which is the safe direction — the server
+      accepts it only when applicable either way. */}
+  <div class="grid gap-2" data-when-reason="project">
+    <label for="contact-budget" class="text-sm font-medium">
+      Rough budget
+      <span class="font-normal" style="color: var(--fg-faint)">(optional)</span>
+    </label>
+    <input
+      id="contact-budget"
+      name="budget"
+      type="number"
+      min="0"
+      step="1000"
+      inputmode="numeric"
+      class="rounded-md border px-3 py-2 text-sm bg-transparent"
+      style="border-color: var(--line-subtle)"
+    />
+    <p data-error-for="budget" class="text-xs" style="color: var(--fg-faint)" hidden></p>
+  </div>
+
+  <div class="grid gap-2">
+    <label for="contact-message" class="text-sm font-medium">Message</label>
+    <textarea
+      id="contact-message"
+      name="message"
+      rows="6"
+      required
+      minlength="20"
+      maxlength="5000"
+      class="rounded-md border px-3 py-2 text-sm bg-transparent"
+      style="border-color: var(--line-subtle)"></textarea>
+    <p data-error-for="message" class="text-xs" style="color: var(--fg-faint)" hidden></p>
+  </div>
+
+  {/* The honeypot. Hidden from sight AND from assistive technology, and taken
+      out of the tab order — a decoy that a screen-reader user fills in is a
+      decoy that eats real messages. */}
+  <div class="absolute w-px h-px -m-px overflow-hidden" aria-hidden="true">
+    <label for="contact-company">Company</label>
+    <input id="contact-company" name="company" type="text" tabindex="-1" autocomplete="off" />
+  </div>
+
+  <div class="flex items-center gap-4">
+    <button
+      type="submit"
+      class="rounded-md px-4 py-2 text-sm font-medium border transition-opacity hover:opacity-80 disabled:opacity-50"
+      style="border-color: var(--line-subtle)"
+    >
+      Send
+    </button>
+    <span data-form-status class="text-xs" style="color: var(--fg-faint)"></span>
+  </div>
+</form>
+
+<script>
+  // Progressive enhancement. Everything here is an upgrade on a form that
+  // already works: it swaps the redirect for inline, per-field messages, which
+  // is the only part a round trip through the URL cannot do well.
+  const form = document.querySelector<HTMLFormElement>("[data-contact-form]");
+  if (form) {
+    const reason = form.querySelector<HTMLSelectElement>('[name="reason"]');
+    const conditionals = form.querySelectorAll<HTMLElement>("[data-when-reason]");
+    const status = form.querySelector<HTMLElement>("[data-form-status]");
+    const banner = form.querySelector<HTMLElement>("p[data-form-error]");
+
+    // Mirror the config's `when` client-side. The server enforces it too — this
+    // is about not asking a question that does not apply, not about trust.
+    const syncConditionals = () => {
+      for (const el of conditionals) {
+        const applies = reason?.value === el.dataset.whenReason;
+        el.hidden = !applies;
+        // Cleared as well as hidden: the CMS REJECTS a value for a field whose
+        // condition is false rather than dropping it, so leaving a stale number
+        // in a hidden input would fail the submission for a reason the visitor
+        // cannot see.
+        if (!applies) {
+          for (const input of el.querySelectorAll<HTMLInputElement>("input")) input.value = "";
+        }
+      }
+    };
+    reason?.addEventListener("change", syncConditionals);
+    syncConditionals();
+
+    const clearErrors = () => {
+      for (const p of form.querySelectorAll<HTMLElement>("[data-error-for]")) {
+        p.hidden = true;
+        p.textContent = "";
+      }
+      if (banner) {
+        banner.hidden = true;
+        banner.textContent = "";
+      }
+    };
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      clearErrors();
+      const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+      if (button) button.disabled = true;
+      if (status) status.textContent = "Sending…";
+
+      try {
+        const res = await fetch(form.action, {
+          method: "POST",
+          headers: { Accept: "application/json" },
+          body: new FormData(form),
+        });
+        const body = await res.json();
+        if (body.ok) {
+          window.location.assign("/thanks/");
+          return;
+        }
+        for (const err of body.errors ?? []) {
+          // `path` is the dotted field path the CMS reports; an empty one is a
+          // failure about the submission rather than about a field.
+          const target = err.path
+            ? form.querySelector<HTMLElement>(`[data-error-for="${err.path}"]`)
+            : banner;
+          if (target) {
+            target.textContent = err.message;
+            target.hidden = false;
+          } else if (banner) {
+            banner.textContent = err.message;
+            banner.hidden = false;
+          }
+        }
+        form.querySelector<HTMLElement>("[data-error-for]:not([hidden])")?.scrollIntoView({
+          block: "center",
+          behavior: "smooth",
+        });
+      } catch {
+        if (banner) {
+          banner.textContent = "We couldn't reach the server. Please try again in a moment.";
+          banner.hidden = false;
+        }
+      } finally {
+        if (button) button.disabled = false;
+        if (status) status.textContent = "";
+      }
+    });
+  }
+</script>

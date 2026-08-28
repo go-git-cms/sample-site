@@ -1,6 +1,7 @@
 ---
 import { marked } from "marked";
 import Base from "~/layouts/Base.astro";
+import NewsletterSignup from "~/components/NewsletterSignup.astro";
 import { getArticle } from "~/lib/content";
 import { formatDate, mediaUrl, resolveSeo } from "~/lib/seo";
 
@@ -8,6 +9,11 @@ import { formatDate, mediaUrl, resolveSeo } from "~/lib/seo";
 // controls and what the CMS's preview URL template interpolates, so the two
 // have to agree — route on the filename and every preview lands on a 404 the
 // moment someone renames a post's title without renaming its file.
+// Server-rendered per request: the page already composes preview drafts, and
+// the newsletter signup reads the query string a no-JavaScript submission
+// redirects back with.
+export const prerender = false;
+
 const preview = Astro.locals.preview;
 const article = await getArticle(Astro.params.slug ?? "", preview);
 
@@ -74,5 +80,9 @@ const seo = resolveSeo(article.seo, {
     </header>
 
     <div class="prose mt-10" set:html={html} />
+
+    {/* The signup reads ?subscribed / ?subscribeError from the no-JavaScript
+        round trip, which is why this page is server-rendered below. */}
+    <NewsletterSignup />
   </article>
 </Base>

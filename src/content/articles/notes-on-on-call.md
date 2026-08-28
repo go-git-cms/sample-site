@@ -6,7 +6,7 @@ tags:
   - operations
   - engineering
 title: Notes on being on call
-updateDate: ""
+updateDate: "2026-08-24"
 ---
 I carried a pager for six years. Here is nearly everything I learned, which is less than you would hope.
 

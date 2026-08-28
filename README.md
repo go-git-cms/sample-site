@@ -132,6 +132,40 @@ is authoritative and survives a rename; the paths are copies the build reads
 without calling the CMS. `src/lib/seo.ts#mediaUrl` prefers the CDN copy and
 falls back to the public path.
 
+## Forms
+
+Two forms live in `go-git-cms.yml` under `forms:`, and the site posts to them:
+
+| | |
+|---|---|
+| `/contact/` | `src/components/ContactForm.astro` → `src/pages/api/forms/contact.ts` |
+| foot of every article | `src/components/NewsletterSignup.astro` → `src/pages/api/forms/newsletter.ts` |
+
+They are chosen to be the two different kinds. **Contact** declares a `store:`,
+so every submission is also a JSON file committed to the repository, sharded by
+month; it has a conditional field (budget, asked only when the reason is a
+project), per-rule validation messages, and a honeypot. **Newsletter** declares
+no store, so its submissions live only in the CMS database — an email list does
+not belong in a public repository, and nobody wants a commit per subscriber.
+
+Both work with JavaScript switched off: a native POST ends in a 303, to
+`/thanks/` for contact and back to the article for the newsletter. JavaScript
+upgrades that to inline per-field messages, which is the only part a round trip
+through the query string cannot do well.
+
+**Why they post through this site rather than straight at the CMS.** The content
+API accepts a plain cross-origin `<form method="post">` — a static site can point
+one at it directly. This site does not, because a successful native post is
+answered with `303 Location: /thanks/`, and a browser resolves that against the
+origin it posted to: cross-origin, that is the CMS's host, not yours. (Only
+rooted paths are accepted there — an absolute one would be an open redirect on a
+public unauthenticated endpoint.) Posting same-origin also keeps the CMS origin
+and repository name out of the page source. `src/lib/forms.ts` is the whole of
+that seam.
+
+Set `CMS_API_URL` and `CMS_REPO` (and `CMS_PROJECT`, `CMS_REF` if they differ)
+to point the forms at your own CMS. Their defaults are this monorepo.
+
 ## Preview
 
 This site is `output: "server"`, so preview is the **SSR middleware** case: the
