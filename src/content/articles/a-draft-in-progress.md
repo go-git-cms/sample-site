@@ -6,6 +6,7 @@ slug: a-draft-in-progress
 tags:
   - meta
 title: A draft in progress
+updateDate: ""
 ---
 This article exists to demonstrate one thing: `draft: true`.
 
@@ -17,4 +18,4 @@ Every place articles are listed filters on it:
 * `src/pages/articles/[slug].astro` excludes them from `getStaticPaths`, so this page is not built at all
 * `src/pages/rss.xml.ts` excludes them from the feed
 
-Toggle the switch in the editor and this page appears on the next build.
+Toggle the switch in the editor and this page appears on the next build. 
