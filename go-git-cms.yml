@@ -411,3 +411,102 @@ content_models:
         display: { component: body, source: body, format: markdown, flavor: gfm }
 
       - *seo
+
+# ── Forms ───────────────────────────────────────────────────────────────────
+#
+# What the site COLLECTS, as opposed to what it publishes. A form is declared
+# here and the CMS exposes it on the content API; the site renders its own
+# markup and posts to it, over JSON or as a plain browser form.
+#
+# Two forms, chosen to exercise the parts of the feature that differ.
+forms:
+  # A contact form: conditional fields, per-rule messages, and submissions
+  # versioned into the repository.
+  - name: contact
+    label: Contact
+    description: General enquiries from the site's contact page.
+
+    # Everyone may submit — that is what a form is for. Reading the submissions
+    # is the inverse: omitting `read` would already deny the public, and naming
+    # the roles says who in the workspace is expected to answer them.
+    read: ["editor"]
+    delete: ["admin"]
+
+    # Versioned in git. Sharded by month so the directory a year from now is
+    # still something a person can open, and `_id` in the name is what makes a
+    # collision impossible.
+    store:
+      path: "src/content/submissions/contact/**/*.json"
+      filename: "{{submittedAt}}-{{_id}}"
+
+    # A field the form never asks for. A submission that fills it in is recorded
+    # as spam and answered normally, so a bot learns nothing.
+    honeypot: company
+    rate_limit: { per_minute: 5 }
+    redirect_to: /thanks
+
+    fields:
+      - name: name
+        label: Your name
+        type: string
+        required: true
+        validate:
+          - { rule: maxLength, value: 120 }
+
+      - name: email
+        label: Email
+        type: string
+        required: true
+        display: { component: email }
+        validate:
+          - rule: email
+            message: "We need an address that works, or we can't reply."
+
+      - name: reason
+        label: What's this about?
+        type: string
+        required: true
+        enum: [hiring, project, other]
+        display: { component: select }
+
+      # Only asked for — and only accepted — when the reason is a project. A
+      # submission that supplies it anyway is rejected rather than stored, so
+      # the record cannot contradict the rules it passed.
+      - name: budget
+        label: Rough budget
+        type: integer
+        display: { component: number }
+        when: { field: reason, op: eq, value: project }
+        validate:
+          - { rule: min, value: 0 }
+
+      - name: message
+        label: Message
+        type: string
+        required: true
+        display: { component: textarea }
+        validate:
+          - { rule: minLength, value: 20, message: "A sentence or two, please." }
+          - { rule: maxLength, value: 5000 }
+
+  # A newsletter signup: database-only, because an email list does not belong in
+  # a public repository and nobody wants a commit per subscriber.
+  - name: newsletter
+    label: Newsletter
+    description: Email signups from the site footer.
+    read: ["editor"]
+    honeypot: website
+    rate_limit: { per_minute: 10 }
+    fields:
+      - name: email
+        label: Email
+        type: string
+        required: true
+        display: { component: email }
+        validate:
+          - { rule: email }
+      - name: consent
+        label: Agreed to be emailed
+        type: boolean
+        required: true
+        display: { component: checkbox }
