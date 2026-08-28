@@ -437,7 +437,13 @@ forms:
     # collision impossible.
     store:
       path: "src/content/submissions/contact/**/*.json"
-      filename: "{{submittedAt}}-{{_id}}"
+      # slugify, not the raw timestamp: an RFC3339 time contains colons, which
+      # are legal in a file name on macOS and Linux and not on Windows — so the
+      # obvious `{{submittedAt}}-{{_id}}` writes a repository that cannot be
+      # checked out on a third of the machines that might clone it. Slugified it
+      # is still sortable and still readable, which was the point of putting the
+      # time in the name at all.
+      filename: "{{slugify submittedAt}}-{{_id}}"
 
     # A field the form never asks for. A submission that fills it in is recorded
     # as spam and answered normally, so a bot learns nothing.

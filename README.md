@@ -166,6 +166,13 @@ that seam.
 Set `CMS_API_URL` and `CMS_REPO` (and `CMS_PROJECT`, `CMS_REF` if they differ)
 to point the forms at your own CMS. Their defaults are this monorepo.
 
+To develop against `gitcms-local` rather than a hosted CMS, point `CMS_API_URL`
+at it — `CMS_API_URL=http://127.0.0.1:4321 pnpm dev`. Submitting works there
+with no credential, and a contact submission is written straight into
+`src/content/submissions/` as the file a hosted export would have committed,
+`_id` and all. The newsletter form has no `store:`, so local mode has nowhere to
+put its submissions and says so rather than silently accepting them.
+
 ## Preview
 
 This site is `output: "server"`, so preview is the **SSR middleware** case: the
