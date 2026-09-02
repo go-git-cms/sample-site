@@ -31,13 +31,14 @@ FROM --platform=$BUILDPLATFORM node:22-alpine AS build
 RUN corepack enable
 WORKDIR /src
 
-# The whole workspace rather than examples/sample-site alone: the site imports
-# @gogitcms/preview-astro (and its preview-ssr/preview-core chain) as
-# workspace dependencies, and pnpm needs the lockfile and workspace manifest to
-# resolve them.
+# The whole workspace rather than examples/sample-site alone: the install and
+# build steps below run through `pnpm --filter`, which needs the workspace
+# manifest and the root lockfile. The site's own @gogitcms dependencies are
+# *published* ones (`*`, not `workspace:` — the site is mirrored out to a
+# standalone repository), so they come from the registry like any other.
 COPY . .
-# A read:packages credential. The site's own dependencies are all workspace
-# links, but `deploy` below re-resolves the *whole* workspace before it prunes,
+# A read:packages credential. Nothing the site itself installs needs one, but
+# `deploy` below re-resolves the *whole* workspace before it prunes,
 # and apps/docs depends on @go-git-cms/plugin-mdx, which lives on GitHub
 # Packages and refuses anonymous reads. So this build needs one after all — set
 # NPM_TOKEN as a build variable on Railway.
@@ -132,11 +133,9 @@ RUN pnpm --filter @gogitcms/example-sample-site build
 # the workspace before it prunes, apps/docs among them, so it reaches GitHub
 # Packages for plugin-mdx even though nothing in this image uses it.
 #
-# auto-install-peers=false covers a second, quieter problem: --prod drops the
-# dependencies that link the @gogitcms packages into the workspace, leaving
-# only peer dependencies on them, which pnpm would satisfy by downloading the
-# *published* copies — shipping packages that are not the ones the site was just
-# built against. Turned off, it links the workspace copies into /out.
+# auto-install-peers=false keeps `deploy` from resolving peer ranges of its own
+# accord while it re-resolves the workspace; the site's own @gogitcms packages
+# are ordinary published dependencies, so --prod carries them across as-is.
 # (Not usable on the frozen installs above: a frozen install refuses any
 # autoInstallPeers that differs from the value recorded in the lockfile.)
 RUN set -eu; \
