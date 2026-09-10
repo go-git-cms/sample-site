@@ -100,6 +100,18 @@ content_models:
         of: string
         display: { component: list }
 
+      # Related reading: pointers at other articles, keyed by path. Nothing is
+      # copied — a page resolves each with getEntry — so a retitled article
+      # needs no rewrite here, and deleting one that is listed somewhere clears
+      # it from the list (on_delete: unset) rather than refusing.
+      - name: related
+        label: Related articles
+        type: array
+        of: string
+        display: { component: list }
+        reference: { collection: articles, on_delete: unset }
+        max_items: 3
+
       # FIRST USE of the media-reference shape. The object form stores
       # {id, public_path, cdn_path}: the id is authoritative, so the reference
       # survives the file being renamed, and the paths are copies the built site
