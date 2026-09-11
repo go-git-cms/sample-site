@@ -33,9 +33,10 @@
 #                case for media references and the shared CTA block.
 #
 # Component ↔ type rules (enforced on import): string → input | textarea | body |
-# slug | email | url | date | datetime | select | media; boolean → checkbox |
-# switch; integer/float → number | stepper | telephone | date | datetime |
-# select; array → list | mixedList; object → inlineGroup | group | media.
+# slug | email | url | date | datetime | select | media | reference; boolean →
+# checkbox | switch; integer/float → number | stepper | telephone | date |
+# datetime | select; array → list | mixedList; object → inlineGroup | group |
+# media | reference.
 
 version: 1
 
@@ -101,9 +102,10 @@ content_models:
         display: { component: list }
 
       # Related reading: pointers at other articles, keyed by path. Nothing is
-      # copied — a page resolves each with getEntry — so a retitled article
-      # needs no rewrite here, and deleting one that is listed somewhere clears
-      # it from the list (on_delete: unset) rather than refusing.
+      # copied — the article page resolves each key against the collection
+      # (src/lib/content.ts, getRelated) — so a retitled article needs no
+      # rewrite here, and deleting one that is listed somewhere clears it from
+      # the list (on_delete: unset) rather than refusing.
       - name: related
         label: Related articles
         type: array
@@ -289,6 +291,23 @@ content_models:
                 label: Button link
                 type: string
                 display: { component: url }
+              # …or a page of this site instead of a URL. The object form
+              # stores the target's key under `ref` and, beside it, two copies
+              # the CMS keeps current: its title, and its URL rendered from the
+              # collection and slug. The site links without a join, and a slug
+              # change on the article rewrites every CTA pointing at it in the
+              # same commit. Deleting a page a CTA links to is refused, naming
+              # the page that links to it (the default, restrict). When both a
+              # page and a URL are set, the page wins.
+              - name: buttonPage
+                label: Or link to a page
+                type: object
+                display: { component: reference }
+                reference:
+                  collections: [articles, projects]
+                  embed:
+                    title: title
+                    href: "/{{_collection}}/{{slug}}/"
 
       - *seo
 

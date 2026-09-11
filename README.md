@@ -6,7 +6,8 @@ to end in `go-git-cms.yml` for [go-git-cms](https://github.com/go-git-cms/gogitc
 Clone it, point it at your own CMS, and edit it — it is a site you could
 plausibly deploy, not a snippet. It exists to show what a real content model
 looks like when the CMS is the editing surface: singletons, mixed lists,
-structured metadata, media references, and SEO on every model.
+structured metadata, media, references between documents, and SEO on every
+model.
 
 ```bash
 pnpm install
@@ -131,6 +132,36 @@ The object form of a media field stores `{ id, public_path, cdn_path }` — the 
 is authoritative and survives a rename; the paths are copies the build reads
 without calling the CMS. `src/lib/seo.ts#mediaUrl` prefers the CDN copy and
 falls back to the public path.
+
+## References
+
+Two fields point at other documents, one of each form the CMS offers:
+
+| Field | Form | Stored |
+|---|---|---|
+| `articles.related` | list of strings | the target's path: `src/content/articles/reading-the-diff.md` |
+| `cta.buttonPage` (the block shared by the homepage and project pages) | object | `{ ref, title, href }` — the key plus two copies |
+
+A **string** reference is a pointer and nothing more. `src/lib/content.ts`'s
+`getRelated` resolves each key against the collection (an entry's `filePath`
+is the same project-relative string), so a retitled article shows its new
+title under "Related reading" without the article that lists it being
+rewritten. Deleting an article that others list clears it from their lists —
+`on_delete: unset` in `go-git-cms.yml` — rather than refusing.
+
+An **object** reference carries copies beside the key, declared under
+`embed`. The CTA block's `buttonPage` copies the target's `title` and renders
+its `href` from `/{{_collection}}/{{slug}}/`, so `Cta.astro` links without a
+join. The copies belong to the CMS: change the article's slug and every CTA
+that points at it is rewritten in the same commit; retitle it in git directly
+and the next import repairs the copies and commits the result. The editor
+shows them read-only. Deleting a page a CTA links to is refused, naming the
+page that links to it — the default, `restrict`.
+
+Keys are paths *within the project*, not the repository —
+`src/content/articles/…`, never `examples/sample-site/src/…` — which is what
+lets this directory be lifted into a repository of its own with its content
+unchanged.
 
 ## Forms
 

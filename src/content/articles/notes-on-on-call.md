@@ -1,6 +1,8 @@
 ---
 excerpt: Six years of carrying a pager, distilled into the handful of things that actually reduced the number of times it went off.
 publishDate: "2026-02-11"
+related:
+  - src/content/articles/reading-the-diff.md
 slug: notes-on-on-call
 tags:
   - operations

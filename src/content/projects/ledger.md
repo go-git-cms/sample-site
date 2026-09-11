@@ -29,8 +29,11 @@ blocks:
     heading: What we built
   - _variant: cta
     body: I wrote up the migration strategy in more detail.
-    buttonHref: /articles/reading-the-diff/
     buttonLabel: Read the article
+    buttonPage:
+      href: /articles/reading-the-diff/
+      ref: src/content/articles/reading-the-diff.md
+      title: Reading the diff
     heading: Want the long version?
 featured: true
 role: Tech lead

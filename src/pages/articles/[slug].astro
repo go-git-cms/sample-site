@@ -1,8 +1,9 @@
 ---
 import { marked } from "marked";
 import Base from "~/layouts/Base.astro";
+import ArticleCard from "~/components/ArticleCard.astro";
 import NewsletterSignup from "~/components/NewsletterSignup.astro";
-import { getArticle } from "~/lib/content";
+import { getArticle, getRelated } from "~/lib/content";
 import { formatDate, mediaUrl, resolveSeo } from "~/lib/seo";
 
 // Routed on the `slug` *field*, not the filename. The slug is what an editor
@@ -24,6 +25,12 @@ if (!article || (article.draft && !preview)) {
 }
 
 const html = await marked.parse(article.body);
+
+// What the author listed as related, resolved from their keys. Nothing about a
+// target is copied into this article's file — the reference is a pointer — so
+// a retitled article shows its new title here without this one being rewritten.
+const related = await getRelated(article, preview);
+
 const published = formatDate(article.publishDate);
 const updated = formatDate(article.updateDate);
 const coverSrc = mediaUrl(article.cover);
@@ -80,6 +87,26 @@ const seo = resolveSeo(article.seo, {
     </header>
 
     <div class="prose mt-10" set:html={html} />
+
+    {
+      related.length > 0 && (
+        <section class="mt-16 pt-10 border-t" style="border-color: var(--line-subtle)">
+          <h2 class="text-xl font-semibold tracking-tight">Related reading</h2>
+          <div class="mt-8 grid gap-10 sm:grid-cols-2">
+            {related.map((a) => (
+              <ArticleCard
+                title={a.title}
+                slug={a.slug}
+                excerpt={a.excerpt}
+                publishDate={a.publishDate}
+                tags={a.tags}
+                cover={a.cover}
+              />
+            ))}
+          </div>
+        </section>
+      )
+    }
 
     {/* The signup reads ?subscribed / ?subscribeError from the no-JavaScript
         round trip, which is why this page is server-rendered below. */}

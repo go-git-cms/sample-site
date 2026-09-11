@@ -2,14 +2,23 @@
 // The CTA block is shared: the homepage and every project page render this same
 // component, because both alias the same `&ctaBlock` variant in go-git-cms.yml.
 // One schema, one template — the two surfaces cannot drift.
+import type { PageRef } from "~/lib/content";
+
 interface Props {
   heading: string;
   body?: string;
   buttonLabel?: string;
   buttonHref?: string;
+  buttonPage?: PageRef;
 }
 
-const { heading, body, buttonLabel, buttonHref } = Astro.props;
+const { heading, body, buttonLabel, buttonHref, buttonPage } = Astro.props;
+
+// A page link wins over a typed URL: its href is a copy the CMS keeps current
+// (it follows the target's slug), so the button cannot go stale — and the label
+// falls back to the target's title for the same reason.
+const href = buttonPage?.href || buttonHref;
+const label = buttonLabel || buttonPage?.title;
 ---
 
 <section class="mx-auto max-w-5xl px-6 py-16">
@@ -26,13 +35,13 @@ const { heading, body, buttonLabel, buttonHref } = Astro.props;
       )
     }
     {
-      buttonLabel && buttonHref && (
+      label && href && (
         <a
-          href={buttonHref}
+          href={href}
           class="mt-7 inline-flex items-center h-10 px-6 rounded-md text-sm font-medium transition-opacity hover:opacity-85"
           style="background: var(--fg); color: var(--page)"
         >
-          {buttonLabel}
+          {label}
         </a>
       )
     }

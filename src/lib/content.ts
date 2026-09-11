@@ -29,7 +29,16 @@ const CONTENT_ROOT = process.env.CONTENT_ROOT || process.cwd();
 /** One item of a mixedList: the CMS records which variant shape it is. */
 export type Block = { _variant: string } & Record<string, unknown>;
 
+/**
+ * The object form of a reference to another document (the CTA block's
+ * `buttonPage` in go-git-cms.yml): the target's key under `ref`, and beside it
+ * the copies the CMS keeps current — here its title and its URL.
+ */
+export type PageRef = { ref?: string; title?: string; href?: string };
+
 export type Article = {
+  /** The file's path within the project — what a reference to this article stores. */
+  path: string;
   slug: string;
   title: string;
   publishDate: Date;
@@ -38,6 +47,8 @@ export type Article = {
   featured: boolean;
   excerpt?: string;
   tags?: string[];
+  /** Keys of related articles (string references), in the editor's order. */
+  related?: string[];
   cover?: MediaRef;
   seo?: SeoBlock;
   /** Raw markdown; pages render it with marked. */
@@ -116,7 +127,7 @@ async function loadMarkdown(
   const raw = await readFile(relPath);
   if (raw == null && !o?.created) return null;
   const { data, content } = raw != null ? matter(raw) : { data: {}, content: "" };
-  return compose({ ...data, body: content }, o);
+  return compose({ ...data, body: content, path: relPath }, o);
 }
 
 /**
@@ -146,7 +157,7 @@ async function listMarkdown(
         o.path.includes(`${dir}/`) &&
         !onDisk.some((p) => o.path === p || o.path.endsWith(`/${p}`)),
     )
-    .map((o) => compose({ body: "" }, o));
+    .map((o) => compose({ body: "", path: o.path }, o));
   return [...docs.filter((d): d is Record<string, unknown> => d != null), ...created];
 }
 
@@ -162,6 +173,7 @@ function toDate(v: unknown): Date | undefined {
 
 function toArticle(d: Record<string, unknown>): Article {
   return {
+    path: String(d.path ?? ""),
     slug: String(d.slug ?? ""),
     title: String(d.title ?? ""),
     publishDate: toDate(d.publishDate) ?? new Date(0),
@@ -170,6 +182,7 @@ function toArticle(d: Record<string, unknown>): Article {
     featured: Boolean(d.featured ?? false),
     excerpt: d.excerpt ? String(d.excerpt) : undefined,
     tags: Array.isArray(d.tags) ? (d.tags as string[]) : undefined,
+    related: Array.isArray(d.related) ? (d.related as string[]) : undefined,
     cover: d.cover as MediaRef | undefined,
     seo: d.seo as SeoBlock | undefined,
     body: String(d.body ?? ""),
@@ -198,7 +211,11 @@ function toProject(d: Record<string, unknown>): Project {
 
 export async function getArticles(preview?: PreviewPayload | null): Promise<Article[]> {
   if (preview) return (await listMarkdown("src/content/articles", preview)).map(toArticle);
-  return (await getCollection("articles")).map((e) => toArticle({ ...e.data, body: e.body ?? "" }));
+  // `filePath` is the entry's path relative to the project root — the same
+  // string a reference to the article stores.
+  return (await getCollection("articles")).map((e) =>
+    toArticle({ ...e.data, body: e.body ?? "", path: e.filePath ?? "" }),
+  );
 }
 
 export async function getArticle(
@@ -208,6 +225,34 @@ export async function getArticle(
   // Routed on the `slug` field, not the filename — the slug is what an editor
   // controls and what the CMS's preview URL template interpolates.
   return (await getArticles(preview)).find((a) => a.slug === slug) ?? null;
+}
+
+/**
+ * Does a document's path answer to a reference key? Keys are project-relative
+ * (src/content/articles/x.md); a path from a preview override is repo-relative
+ * and may carry the examples/sample-site prefix, so match on the suffix — the
+ * same rule overrideFor applies.
+ */
+function isDocument(path: string, key: string): boolean {
+  return path === key || path.endsWith(`/${key}`) || key.endsWith(`/${path}`);
+}
+
+/**
+ * The articles an article lists as related, in its order. Nothing about a
+ * target is copied into the referring file — `related` is a list of pointers —
+ * so this is the join, done at render time against the same collection.
+ *
+ * A key that names nothing is skipped rather than rendered as a gap: the CMS
+ * reports it to the editor as missing, and the reader need not know. Drafts
+ * stay out, as they do in every list.
+ */
+export async function getRelated(article: Article, preview?: PreviewPayload | null): Promise<Article[]> {
+  const keys = article.related ?? [];
+  if (keys.length === 0) return [];
+  const all = await getArticles(preview);
+  return keys
+    .map((key) => all.find((a) => isDocument(a.path, key)))
+    .filter((a): a is Article => !!a && !a.draft && a.path !== article.path);
 }
 
 export async function getProjects(preview?: PreviewPayload | null): Promise<Project[]> {

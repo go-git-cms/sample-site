@@ -2,6 +2,9 @@
 excerpt: Every clever line is a loan taken out against someone else's Tuesday afternoon. Here is how I decide whether to borrow.
 featured: true
 publishDate: "2026-05-18"
+related:
+  - src/content/articles/reading-the-diff.md
+  - src/content/articles/notes-on-on-call.md
 seo:
   description: Clever code is a loan against future comprehension. A rule of thumb for deciding when the interest is worth paying.
 slug: the-cost-of-clever

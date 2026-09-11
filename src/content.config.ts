@@ -54,6 +54,18 @@ const mediaRef = z.object({
   cdn_path: z.string().optional(),
 });
 
+/**
+ * The object form of a reference to another document, as the CMS stores it:
+ * `ref` is the target's key — its path within the project — and the rest are
+ * copies declared under `embed` in go-git-cms.yml, which the CMS recomputes
+ * whenever either document is saved or imported. Read them; never write them.
+ */
+const pageRef = z.object({
+  ref: z.string().optional(),
+  title: z.string().optional(),
+  href: z.string().optional(),
+});
+
 /** The aliased `*seo` block from go-git-cms.yml, on every model that has one. */
 const seo = z
   .object({
@@ -77,6 +89,7 @@ const ctaBlock = z.object({
   body: z.string().optional(),
   buttonLabel: z.string().optional(),
   buttonHref: z.string().optional(),
+  buttonPage: pageRef.optional(),
 });
 
 const homeBlock = z.discriminatedUnion("_variant", [
@@ -140,6 +153,9 @@ const articles = defineCollection({
     featured: z.boolean().optional(),
     excerpt: z.string().optional(),
     tags: z.array(z.string()).optional(),
+    // String references: each is the target's path within the project.
+    // Resolved by getRelated in src/lib/content.ts.
+    related: z.array(z.string()).optional(),
     cover: mediaRef.optional(),
     seo,
   }),
