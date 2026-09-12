@@ -4,6 +4,7 @@ featured: true
 publishDate: "2026-04-02"
 related:
   - src/content/articles/the-cost-of-clever.md
+  - src/content/articles/the-cost-of-clever.md
 slug: reading-the-diff
 tags:
   - engineering
