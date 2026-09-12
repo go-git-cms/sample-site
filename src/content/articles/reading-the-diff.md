@@ -3,8 +3,8 @@ excerpt: Code review is not a search for defects. It is a check on whether the c
 featured: true
 publishDate: "2026-04-02"
 related:
-  - src/content/articles/the-cost-of-clever.md
-  - src/content/articles/the-cost-of-clever.md
+  - src/content/articles/the-cost-of-clever-yo.md
+  - src/content/articles/the-cost-of-clever-yo.md
 slug: reading-the-diff
 tags:
   - engineering
