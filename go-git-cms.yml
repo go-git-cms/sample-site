@@ -105,12 +105,16 @@ content_models:
       # copied — the article page resolves each key against the collection
       # (src/lib/content.ts, getRelated) — so a retitled article needs no
       # rewrite here, and deleting one that is listed somewhere clears it from
-      # the list (on_delete: unset) rather than refusing.
+      # the list (on_delete: unset) rather than refusing. The array stays a
+      # `list`; `display.item` is what makes each row a document picker, and
+      # the `reference:` block describes what those items point at.
       - name: related
         label: Related articles
         type: array
         of: string
-        display: { component: list }
+        display:
+          component: list
+          item: { component: reference }
         reference: { collection: articles, on_delete: unset }
         max_items: 3
 
@@ -118,12 +122,16 @@ content_models:
       # {id, public_path, cdn_path}: the id is authoritative, so the reference
       # survives the file being renamed, and the paths are copies the built site
       # reads without calling the CMS. Those three children are fixed and
-      # required — exactly the kind of boilerplate worth anchoring.
+      # required — exactly the kind of boilerplate worth anchoring. `display`
+      # names the control; the `media:` block beside it names the set, because
+      # which set (and, on a string field, which path form) is a contract the
+      # server enforces rather than a display hint.
       - &mediaRef
         name: cover
         label: Cover image
         type: object
-        display: { component: media, media: images }
+        display: { component: media }
+        media: { set: images }
         fields:
           - { name: id, type: string }
           - { name: public_path, type: string }
@@ -299,10 +307,18 @@ content_models:
               # same commit. Deleting a page a CTA links to is refused, naming
               # the page that links to it (the default, restrict). When both a
               # page and a URL are set, the page wins.
+              # The children are declared, as a media object's are: the key
+              # child plus one per embed, each checked against the targets on
+              # import (title copies a string on both collections; href is a
+              # template, so it must be a string).
               - name: buttonPage
                 label: Or link to a page
                 type: object
                 display: { component: reference }
+                fields:
+                  - { name: ref, type: string }
+                  - { name: title, type: string }
+                  - { name: href, type: string }
                 reference:
                   collections: [articles, projects]
                   embed:
